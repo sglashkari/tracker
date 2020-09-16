@@ -1,62 +1,7 @@
 clc; close all;
-%% Cluster data
-% file_name = fullfile('C:\Users\dome3neuralynx\OneDrive - Johns Hopkins\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx\TT11','cl-maze1.1');
-% A = 
-% time = A.data(:,18);
-clear
-Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-listing = dir(fullfile(Nlx_directory,'**','cl-maze*.*'));
-names = string({listing.name}');
-folders = string({listing.folder}');
-N = length(listing); % number of maze-clusters
-
-tt_no = str2double(extractAfter(folders,"\TT"));
-maze_no = floor(str2double(extractAfter(names,"cl-maze")));
-cluster_no = str2double(extractAfter(names,"."));
-cluster_no(isnan(cluster_no))=0;    % cluster 0
-
-% T = table(maze_no, tt_no, cluster_no, 'VariableNames',{'maze','TT','cluster'});
-absolue_paths = mat2cell(folders+'\'+names,ones(N,1));
-
-A = cellfun(@(x) importdata(x,',',13), absolue_paths); %, 'UniformOutput', false);
-
-% Postion data
-pos_p_file_name = fullfile(Nlx_directory,'Pos.p.ascii');
-B = importdata(pos_p_file_name,',',24);
-time = seconds(B.data(:,1)*1e-6);
-x = B.data(:,2);
-y = 480 - B.data(:,3);
-theta = rad2deg(atan2(y-240, x-320));
-theta = wrapTo360(theta);
-position = timetable(time,x,y,theta);
-
-%% Generate a timetable (named all_cluster_mazes) with all the timestamps
-start_time = zeros(N,1);
-end_time = zeros(N,1);
-
-maze_tt_cl = cellstr(strcat('m',string(maze_no),'_tt',string(tt_no),'_c',string(cluster_no)));
-
-for index = 1:N
-    start_time(index) = str2double(A(index).textdata{12});
-    end_time(index) = str2double(A(index).textdata{13});
-    %ts = start_time:1/30000:end_time;
-    time = seconds((A(index).data(:,18))*1e-6);
-    all_ones = ones(length(time),1);
-    
-    cluster_maze = timetable(time,all_ones,'VariableNames',maze_tt_cl(index));
-    index
-    if index == 1
-        cluster_mazes = cluster_maze;
-    else
-        cluster_mazes = synchronize(cluster_mazes,cluster_maze);
-    end
+if ~exist('pos_clust','var')
+    loaddata;
 end
-
-%% combining position and spikes
-pos_clust = synchronize(position,cluster_mazes);
-% pos_clust_table = timetable2table(pos_clust);
-% pos_clust_table.time = seconds(pos_clust_table.time);
-% pos_clust_array = table2array(pos_clust_table);
 
 %% selecting a portion of the cells and plotting
 close all
@@ -74,7 +19,7 @@ N = length(listing);
 absolue_paths = folders+'\'+names;
 
 %% maze
-maze = 4;
+maze = 2;
 
 TimeEV = readevent;
 StartTime = TimeEV(1:2:end);
@@ -87,7 +32,7 @@ AngularPosition = rad2deg(atan2(y-240, x-320));
 AngularPosition = wrapTo360(AngularPosition);
 
 %% lap detector
-lap = 9;
+lap = 3;
 
 TimePosF = TimePos(~isnan(AngularPosition));
 AngularPositionF = AngularPosition(~isnan(AngularPosition));
@@ -199,6 +144,8 @@ vy = gradient(y)./gradient(TimePos); % pixels/sec
 velocity = sqrt(vx.^2+vy.^2); % pixels/sec
 velocity = velocity * 0.3175; % cm/sec
 
+velocityF = gradient(AngularPositionF)./gradient(TimePosF); % deg/sec (1 deg ~ 1.3 cm)
+
 %% rate map of cells (histogram of occupancy corrected, and velocity)
 E=zeros(17,1);
 RateMap = zeros(17,length(edges)-1);
@@ -271,11 +218,11 @@ CSCVelocity = interp1(TimePos,velocity,TimeCSC);
 ax4 = nexttile;
 rectangle('Position',[TimeRange(1),0,diff(TimeRange),5],'FaceColor','y','EdgeColor','y')
 hold on
-plot(TimeCSC, CSCVelocity);
+plot(TimeCSC, CSCVelocity,TimePosF(2:end-1),velocityF(2:end-1));
 xlabel('Time (sec)')
 ylabel('Velocity (cm/s)')
-pan xon
-zoom xon
+zoom on
+ylim([0 150])
 linkaxes([ax1 ax2 ax3 ax4],'x')
 
 ax1.XLim = TimeRange + [35e-3 -15e-3];
@@ -283,7 +230,7 @@ ax1.XLim = TimeRange + [35e-3 -15e-3];
 %ax1.XLim = [5780 5786];
 % ax1.XLim = [5820 5826]; % m4l4
 ax1.Title.String = ['maze ' num2str(maze) ', lap ' num2str(lap)];
-f1.WindowState = 'maximized';
-f2.WindowState = 'maximized';
-f3.WindowState = 'maximized';
-f4.WindowState = 'maximized';
+% f1.WindowState = 'maximized';
+% f2.WindowState = 'maximized';
+% f3.WindowState = 'maximized';
+% f4.WindowState = 'maximized';

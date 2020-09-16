@@ -1,3 +1,4 @@
+% same as 4 
 clc; close all;
 if ~exist('pos_clust','var')
     loaddata;
@@ -19,6 +20,7 @@ N = length(listing);
 absolue_paths = folders+'\'+names;
 
 %% maze
+counter = 0;
 for maze = 1:5
     close all
     TimeEV = readevent;
@@ -120,12 +122,10 @@ for maze = 1:5
             SpikePos = interp1(TimePosF,AngularPositionF,t_spike_cluster);
             SpikeVelocity = interp1(TimePos,velocity,t_spike_cluster);
             
-            HistClust = histcounts(SpikePos(SpikeVelocity>5), edges);
+            HistClust = histcounts(SpikePos(SpikeVelocity>5), edges); % speed filter
             
             RateMap(i,:) = (HistClust./HistOccInterp)*f; % interpolation rate
             
-            [~, argmaxRateMap] = max(RateMap(i,:));
-            E(i)=Edges(argmaxRateMap);
         end
         
         % no sorting
@@ -143,12 +143,13 @@ for maze = 1:5
             ylabel(['lap ' num2str(lap)])
             ylim([0 1])
             if lap == 1
-                title(['Maze ' num2str(maze) ': Rate Map (Interpolated) for cluster no. ' num2str(i)]);
+                counter = (maze-1)*17+i;
+                title(['Maze ' num2str(maze) ': Rate Map (Interpolated) for cluster no. ' num2str(i) ' - TT' num2str(tt_no(counter)) ' - cl' num2str(cluster_no(counter))]);
             elseif lap == maxlap
                 % save as PDF
                 set(fig,'Visible','on');
                 set(fig,'PaperUnits', 'inches','PaperPosition', [0 0 8.5 11]);
-                saveas(fig,['Maze' num2str(maze) '-cluster' num2str(i) '.pdf'])
+                saveas(fig,[ 'cluster' num2str(i) '- maze' num2str(maze) '.pdf'])
             end
         end
         

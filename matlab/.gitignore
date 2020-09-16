@@ -29,3 +29,7 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+# All pdf files
+*.pdf
+*.fig
