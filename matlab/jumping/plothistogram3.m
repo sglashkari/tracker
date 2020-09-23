@@ -19,7 +19,7 @@ N = length(listing);
 absolue_paths = folders+'\'+names;
 
 %% maze
-maze = 2;
+maze = 1;
 
 TimeEV = readevent;
 StartTime = TimeEV(1:2:end);
@@ -39,7 +39,7 @@ AngularPositionF = AngularPosition(~isnan(AngularPosition));
 AngularPositionF = AngularPositionF(TimePosF>StartTime(maze) & TimePosF<EndTime(maze));
 TimePosF =  TimePosF(TimePosF>StartTime(maze) & TimePosF<EndTime(maze));
 
-LapTime = TimePosF(diff(AngularPositionF) < -340);
+LapTime = TimePosF(diff(AngularPositionF) < -340)
 TimeRange = [LapTime(lap) LapTime(lap+1)]; % seconds
 
 
