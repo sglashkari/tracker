@@ -8,7 +8,7 @@ videoReader  = VideoReader(vid_filename)
 
 framerate = 30;
 
-time = 5966.75;
+time = 5100;%5966.75;
 
 offset = 3887091990.1667* 1e-6 ; %seconds
 
@@ -40,23 +40,24 @@ while true
 
 end
 
-tic
-S = zeros(100,1);
-Z = zeros(1080, 1920, 3, 100, 'uint8');
-for frame_counter=1:length(S)
-    R = read(videoReader,frame_counter+frame_no);
-    S(frame_counter)=sum(sum(R(:,:,1)));
-    Z(:,:,:,frame_counter) = R;
-end
-
-toc;
-
-imgmode = mode(Z);
-toc;
-
-imshow(imgmode)
-
-datacursormode on
+% tic
+% % N = videoReader.NumFrames;
+% % Z = zeros(1080, 1920, 3, 10, 'uint8');
+% % counter = 0;
+% % for frame_counter=sort(randi(N,1,10))
+% %     counter = counter + 1;
+%     Z = read(videoReader,frame_no+[0 100]);
+% %     Z(:,:,:,counter) = R;
+% % end
+% 
+% toc;
+% 
+% imgmode = median(Z,4);
+% toc;
+% 
+% imshow(imgmode)
+% 
+% datacursormode on
 
 %% Top Cam | Side Cam
 % Day1 530 542

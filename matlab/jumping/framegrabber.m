@@ -1,24 +1,25 @@
 %% Reads a video frame by frame
-% Updated March 28, 2020
+% Updated March 28, 2020, modified Oct 22, 2020 
 % detecting the Red LED light
 % Author Shahin G Lashkari
 close all
-vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
-videoReader  = VideoReader(vid_filename);
+%vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
+vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\10-21-2020\fc2_save_2020-10-21-192929.mp4';
+videoReader  = VideoReader(vid_filename)
 
-tic
-S = zeros(1e4,1);
-for frame_no=1:length(S)
-    R = read(videoReader,frame_no);
-    S(frame_no)=sum(sum(R(:,:,1)));
-    Z(:,:,:,frame_no) = R;
-end
-plot(1:length(S),S);
-[~,argmax] = max(S);
-toc
-frame_no = argmax - 10;
-    
-% frame = 232;
+% tic
+% S = zeros(1e4,1);
+% for frame_no=1:length(S)
+%     R = read(videoReader,frame_no);
+%     S(frame_no)=sum(sum(R(:,:,1)));
+%     Z(:,:,:,frame_no) = R;
+% end
+% plot(1:length(S),S);
+% [~,argmax] = max(S);
+% toc
+% frame_no = argmax - 10;
+
+frame_no = 532;
 
 figure;
 while true
@@ -29,18 +30,21 @@ while true
     annotation('textbox',dim,'String',num2str(frame_no),'FitBoxToText','on','Color','white');
     
     try
-        w = waitforbuttonpress;
+        waitforbuttonpress;
     catch
         break;
     end
     
-    sel = get(fig, 'SelectionType');
-    if strcmpi(sel, 'alt')
-        frame_no = frame_no - 1;
-    else
+    button = double(get(gcf,'CurrentCharacter'))
+    % 28 leftarrow
+    % 29 rightarrow
+    % 30 uparrow
+    % 31 downarrow
+    if (button == 28) || (button == 31)
+        frame_no = frame_no - 5;
+    elseif (button == 29) || (button == 30)
         frame_no = frame_no + 1;
     end
-    
 end
 
 
