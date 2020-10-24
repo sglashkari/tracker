@@ -45,5 +45,5 @@ NetCom Version 2.1.1
 -* NOTICE *- (mm/dd/yyyy): 08/08/2013 At Time: 14:54:54 - NetworkNodeClient::ShutdownClient() - Attempt to Close Message Client Socket was successful
 -* NOTICE *- (mm/dd/yyyy): 08/08/2013 At Time: 14:54:54 - NetworkNodeClient::ShutdownClient() - Attempting to Shutdown Message Client
 -* WARNING *- (mm/dd/yyyy): 08/08/2013 At Time: 14:54:54 - NetworkNodeClient::ShutdownClient() - Unable to Close Message Client, Client has not yet been initialized
-Log File Closed - End of File
+Log File Closed - End of File
 

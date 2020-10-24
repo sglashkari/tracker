@@ -4246,5 +4246,5 @@ NetCom Version 2.1.1
 -* ERROR *- (mm/dd/yyyy): 08/15/2013 At Time: 08:56:34 - NodeConnectionClient::ProcessCloseError() - Error closing socket, error code: UNKNOWN.  mStreamType: Event
 -* NOTICE *- (mm/dd/yyyy): 08/15/2013 At Time: 08:56:34 - NetworkNodeClient::ShutdownClient() - Attempting to Close Message Client Socket
 -* ERROR *- (mm/dd/yyyy): 08/15/2013 At Time: 08:56:34 - NetworkNodeClient::ShutdownClient() - Unable to Close Message Client Socket
-Log File Closed - End of File
+Log File Closed - End of File
 

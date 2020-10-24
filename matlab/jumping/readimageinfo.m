@@ -17,17 +17,17 @@ end
 Timestamp = zeros(N,1);
 GPIO = zeros(N,4);
 for i = 1:N
-    A1 = imread([filename num2str(i-1,'%04.f') '.pgm'],'pgm');
+    A = imread([filename num2str(i-1,'%04.f') '.pgm'],'pgm');
     
     % Timestamp
-    B1 = A1(1,1:4);
+    B1 = A(1,1:4);
     hexStr = dec2bin(B1,8);
     Z = hexStr';
     Z = Z(:)';
     Timestamp(i) = bin2dec(Z(1:7))+125e-6*bin2dec(Z(8:20)); % [0,128)
     
     % GPIO
-    B2 = A1(1,5);
+    B2 = A(1,5);
     hexStr = dec2bin(B2,8);
     GPIO(i,1:4) = hexStr(1:4)-'0000';
 end

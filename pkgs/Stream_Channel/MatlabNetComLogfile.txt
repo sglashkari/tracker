@@ -110,5 +110,5 @@ NetCom Version 2.1.1
 -* NOTICE *- (mm/dd/yyyy): 06/04/2013 At Time: 11:03:06 - NodeConnectionClient::CloseServerStream() - WaitForSingleObject for mDmaProcessor thread completed successfully.
 -* NOTICE *- (mm/dd/yyyy): 06/04/2013 At Time: 11:03:06 - NetworkNodeClient::ShutdownClient() - Attempting to Close Message Client Socket
 -* NOTICE *- (mm/dd/yyyy): 06/04/2013 At Time: 11:03:06 - NetworkNodeClient::ShutdownClient() - Attempt to Close Message Client Socket was successful
-Log File Closed - End of File
+Log File Closed - End of File
 
