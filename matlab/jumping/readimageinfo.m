@@ -17,7 +17,7 @@ end
 Timestamp = zeros(N,1);
 GPIO = zeros(N,4);
 for i = 1:N
-    A = imread([filename num2str(i-1,'%04.f') '.pgm'],'pgm');
+    A = imread([filename num2str(i-1,'%01.f') '.pgm'],'pgm');
     
     % Timestamp
     B1 = A(1,1:4);

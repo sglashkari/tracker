@@ -1,10 +1,10 @@
 %% Reads a video frame by frame
-% Updated March 28, 2020, modified Oct 22, 2020 
+% Updated March 28, 2020, modified Oct 22, 2020
 % detecting the Red LED light
 % Author Shahin G Lashkari
 close all
 %vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
-vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\10-21-2020\fc2_save_2020-10-21-192929.mp4';
+vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
 videoReader  = VideoReader(vid_filename)
 
 % tic
@@ -19,7 +19,7 @@ videoReader  = VideoReader(vid_filename)
 % toc
 % frame_no = argmax - 10;
 
-frame_no = 532;
+frame_no = 15;
 
 figure;
 while true
@@ -40,9 +40,13 @@ while true
     % 29 rightarrow
     % 30 uparrow
     % 31 downarrow
-    if (button == 28) || (button == 31)
-        frame_no = frame_no - 5;
-    elseif (button == 29) || (button == 30)
+    try
+        if (button == 28) || (button == 31)
+            frame_no = frame_no - 5;
+        elseif (button == 29) || (button == 30)
+            frame_no = frame_no + 1;
+        end
+    catch
         frame_no = frame_no + 1;
     end
 end
