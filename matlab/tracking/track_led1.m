@@ -7,30 +7,25 @@ function track_led1(vid_filename)
 % Output:
 %   mat file
 %
-% Method:
-%   cross correlation and interpolation
-%
-%   See also circle2, circle0, regionprops, imfindcircles.
-%
 % Author: Shahin G Lashkari
-% Date: August 1, 2020
+% Date: October 26, 2020
 %
 clc; close all;
 if nargin==0
     vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-22_12-38-17.mp4';
-    vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
+    vid_filename = 'D:\OneDrive - Johns Hopkins\HU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4'; % day 0
+    vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Video\2020-10-25_15-59-09.mp4'; %day 1 
 end
 f = waitbar(0,'Please wait...');
 videoReader  = VideoReader(vid_filename)
-videoWriter = VideoWriter(insertBefore(vid_filename,".","_tracked"));
-num_frames = videoReader.NumFrame; % 1683
+%videoWriter = VideoWriter(insertBefore(vid_filename,".","_tracked"));
+num_frames = videoReader.NumFrame % 1683
 frame_rate = videoReader.FrameRate;
-videoWriter.FrameRate = frame_rate;
-videoWriter.Quality = 100;
+%videoWriter.FrameRate = frame_rate;
+%videoWriter.Quality = 100;
 position=zeros(num_frames,3);
-open(videoWriter);
+%open(videoWriter);
 figure(1);
-num_frames
 tic
 for frame_no = 1:num_frames
     % Read image (i.e. a frame) from a video
@@ -76,12 +71,12 @@ for frame_no = 1:num_frames
     end
     
     frame = getframe(gcf);
-    writeVideo(videoWriter,frame);
+    %writeVideo(videoWriter,frame);
     pause(1/frame_rate);
     
 end
 
-close(videoWriter)
+%close(videoWriter)
 
 k=1:length(position);
 t=(k-1)/frame_rate;

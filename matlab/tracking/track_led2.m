@@ -1,26 +1,23 @@
 function track_led2(vid_filename)
-%% CIRCLE2  calculates latency of dome for methods paper
+%% TRACK_LED2 plots the position from the mat file
 %
 % Input:
-%   mat file calculated by circle.
+%   mat file of jumping experiment (Rat 913)
 %
 % Output:
-%   latency
+%   plots of position vs time and x-y
 %
-% Method:
-%   cross correlation and interpolation
-%   
-%   See also circle1, circle0, xcorr.
+%   See also: track_led0, track_led1
 %
 % Author: Shahin G Lashkari
-% Date: August 1, 2020
+% Date: October 26, 2020
 %
 clc;
 close all;
 if nargin==0
-    vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
+    vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
 end
-load(strrep(vid_filename,'mp4','mat'));
+load(strrep(vid_filename,'mp4','mat'),'position');
 varargin
 k = (position(:,2) > 0);
 t = position(k,1)/10;
@@ -32,4 +29,5 @@ figure(1)
 plot(t,x,t,y)
 figure(2)
 plot(x,y)
+axis equal
 
