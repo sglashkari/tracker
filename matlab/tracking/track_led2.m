@@ -15,12 +15,12 @@ function track_led2(vid_filename)
 clc;
 close all;
 if nargin==0
-    vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
+    vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Video\2020-10-25_15-59-09.mp4'; %day 1 
 end
 load(strrep(vid_filename,'mp4','mat'),'position');
 varargin
 k = (position(:,2) > 0);
-t = position(k,1)/10;
+t = position(k,1)/30;
 x = position(k,2);
 y = position(k,3);
 
@@ -28,6 +28,6 @@ y = position(k,3);
 figure(1)
 plot(t,x,t,y)
 figure(2)
-plot(x,y)
+plot(x,y,'.')
 axis equal
 

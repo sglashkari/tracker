@@ -1,25 +1,26 @@
 %% Reads a video frame by frame
-% Updated March 28, 2020, modified Oct 22, 2020
+% Updated March 28, 2020, modified Oct 27, 2020
 % detecting the Red LED light
 % Author Shahin G Lashkari
 close all
 %vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
-vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
+vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Video\2020-10-25_15-59-09.mp4'; %day 1
 videoReader  = VideoReader(vid_filename)
 
-% tic
-% S = zeros(1e4,1);
-% for frame_no=1:length(S)
-%     R = read(videoReader,frame_no);
-%     S(frame_no)=sum(sum(R(:,:,1)));
-%     Z(:,:,:,frame_no) = R;
-% end
-% plot(1:length(S),S);
-% [~,argmax] = max(S);
-% toc
-% frame_no = argmax - 10;
+tic
+N = 1000;
+R = zeros(N,1);
+G = zeros(N,1);
+B = zeros(N,1);
+for frame_no=1:N
+    frames = read(videoReader,frame_no);
+    R(frame_no)=max(max(frames(:,:,1))); % R = 1, G = 2, B = 3
+end
+plot(1:N,R,'r',1:N,G,'g',1:N,B,'b');
+% [~,argmax] = min(R(R>1.1*min(R)));
+toc
 
-frame_no = 15;
+frame_no = input('What is the frame number? ');
 
 figure;
 while true
@@ -35,7 +36,7 @@ while true
         break;
     end
     
-    button = double(get(gcf,'CurrentCharacter'))
+    button = double(get(gcf,'CurrentCharacter'));
     % 28 leftarrow
     % 29 rightarrow
     % 30 uparrow
@@ -51,8 +52,11 @@ while true
     end
 end
 
-
+% Rat 883
 % Day1 530 542
 % Day2 9038 9050
 % Day3 3976 3988
 % Day4 1165 1177 = 231 243
+%----------------------------
+% Rat 913
+% Day1 626 643
