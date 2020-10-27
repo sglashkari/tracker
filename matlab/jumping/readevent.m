@@ -1,4 +1,4 @@
-function [Time,Data,Header] = readevent(Filename)
+function [Time,Data,Header,EventIDs,TTLs] = readevent(Filename)
 if nargin == 0
     Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
     Filename = fullfile(Nlx_directory,'Events.nev');

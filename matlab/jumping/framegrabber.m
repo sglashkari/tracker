@@ -1,6 +1,6 @@
 %% Reads a video frame by frame
 % Updated March 28, 2020, modified Oct 27, 2020
-% detecting the Red LED light
+% detecting the LED light on/off
 % Author Shahin G Lashkari
 close all
 %vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
