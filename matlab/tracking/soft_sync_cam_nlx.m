@@ -1,5 +1,5 @@
 function [T5, T6] = soft_sync_cam_nlx(event_file)
-% IEEE-1588 clock synchronization
+% LED on/off method for software synchronization of camera and freelynx
 % October 27, 2020
 % Author Shahin G. Lashkari
 

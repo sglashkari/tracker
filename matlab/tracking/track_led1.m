@@ -12,11 +12,10 @@ function track_led1(vid_filename)
 %
 clc; close all;
 if nargin==0
-    vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-22_12-38-17.mp4';
-    vid_filename = 'D:\OneDrive - Johns Hopkins\HU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4'; % day 0
-    vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Video\2020-10-25_15-59-09.mp4'; %day 1 
+    [file, path] = uigetfile('D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mp4');
+    vid_filename = fullfile(path,file);
 end
-f = waitbar(0,'Please wait...');
+
 videoReader  = VideoReader(vid_filename)
 %videoWriter = VideoWriter(insertBefore(vid_filename,".","_tracked"));
 num_frames = videoReader.NumFrame % 1683
@@ -27,6 +26,7 @@ position=zeros(num_frames,3);
 %open(videoWriter);
 figure(1);
 tic
+f = waitbar(0,'Please wait...');
 for frame_no = 1:num_frames
     % Read image (i.e. a frame) from a video
     I = read(videoReader,frame_no);
@@ -82,6 +82,8 @@ k=1:length(position);
 t=(k-1)/frame_rate;
 
 waitbar(1,f,'Finishing');
-save(strrep(vid_filename,'mp4','mat'),'position','t','frame_rate');
+[file, path] = uiputfile(strrep(vid_filename,'mp4','mat'));
+mat_filename = fullfile(path,file);
+save(mat_filename,'position','t','frame_rate');
 close(f)
 end

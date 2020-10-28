@@ -2,8 +2,8 @@
 % catch circles for test if the algorithm works
 clc
 close all
-vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-23-Day0\2020-10-23-133050.mp4';
-%vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\913_Jumping_Recording\2020-10-22_12-38-17.mp4';
+[file, path] = uigetfile('D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mp4');
+vid_filename = fullfile(path,file);
 videoReader  = VideoReader(vid_filename)
 
 % Read image (i.e. a frame) from a video
