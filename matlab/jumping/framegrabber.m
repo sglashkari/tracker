@@ -3,22 +3,28 @@
 % detecting the LED light on/off
 % Author Shahin G Lashkari
 close all
-%vid_filename = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Videos\2020-03-29_20-22-00.mp4';
-vid_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Video\2020-10-25_15-59-09.mp4'; %day 1
-videoReader  = VideoReader(vid_filename)
-
-tic
-N = 1000;
-R = zeros(N,1);
-G = zeros(N,1);
-B = zeros(N,1);
-for frame_no=1:N
-    frames = read(videoReader,frame_no);
-    R(frame_no)=max(max(frames(:,:,1))); % R = 1, G = 2, B = 3
+default_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mp4'; %day 1
+quit
+try
+[file, path] = uigetfile({'*.avi;*.mpg;*.mpeg;*.mp4','Video Files (*.avi,*.mpg,*.mpeg,*.mp4)'; '*.*',  'All Files (*.*)'},...
+    'Select a video file',default_filename);
+    videoReader  = VideoReader(fullfile(path,file))
+catch
+    videoReader  = VideoReader(default_filename)
 end
-plot(1:N,R,'r',1:N,G,'g',1:N,B,'b');
-% [~,argmax] = min(R(R>1.1*min(R)));
-toc
+% 
+% tic
+% N = 1000;
+% R = zeros(N,1);
+% G = zeros(N,1);
+% B = zeros(N,1);
+% for frame_no=1:N
+%     frames = read(videoReader,frame_no);
+%     R(frame_no)=max(max(frames(:,:,1))); % R = 1, G = 2, B = 3
+% end
+% plot(1:N,R,'r',1:N,G,'g',1:N,B,'b');
+% % [~,argmax] = min(R(R>1.1*min(R)));
+% toc
 
 frame_no = input('What is the frame number? ');
 

@@ -36,9 +36,10 @@ camera_image_height = max(y);
 % calculating offset by software sychronization between ROS and Neuralynx
 event_file_name = fullfile(Nlx_directory,'Events.nev');
 % [T5, T6] = soft_sync_cam_nlx(event_file_name);
+ [Time,Data,Header,EventIDs,TTLs] = readevent(event_file_name)
 
-T5 = 29.056608915328979;
-T6 = 29.660408973693848;
+T5 = Time(7); %1.603641571020295e+09; %29.056608915328979* 1e6;
+T6 = Time(9); %1.603641571624095e+09; %29.660408973693848* 1e6;
 
 % Day1 530 542
 % Day2 9038 9050
@@ -55,7 +56,7 @@ offset_2 = T6 - light_off_cam * 1e6;
 
 T6-T5
 light_off_cam-light_on_cam
-offset = (offset_1 + offset_2)/2;
+offset = (offset_1 + offset_2)/2
 
 
 %% Calculations

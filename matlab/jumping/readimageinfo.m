@@ -9,6 +9,7 @@ function [Timestamp, GPIO] = readimageinfo(filename, N)
 
 if nargin < 1
     filename = 'C:\Users\Shahin\test\matlab\automation\fc2_save_2020-10-22-222431-';
+    filename = 'C:\Users\Shahin\Google Drive\FlyCapture2Test-19300384-';
     N = 10;
 elseif nargin <2
     N = 1;
