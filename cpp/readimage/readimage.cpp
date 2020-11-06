@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <ctime> // time calculation
 
 using namespace cv;
 using namespace std;
@@ -61,52 +62,51 @@ tuple<double, vector<int>> readimageinfo (Mat image)
 
 int main(int argc, char** argv)
 {
+
     if ( argc != 2 )
     {
         printf("usage: DisplayImage.out <Image_Path>\n");
         return -1;
     }
-    Mat image = imread( argv[1], IMREAD_GRAYSCALE); //IMREAD_COLOR);
-    
-    if (!image.data )
-    {
-        printf("No image data \n");
-        return -1;
+
+    int imageCnt = 0;
+    time_t tstart, tend; 
+    tstart = time(0);
+
+    clock_t t;
+    t = clock();
+    while(true){ 
+
+        string filename = argv[1];
+        filename = filename + to_string(imageCnt++) + ".pgm";
+        cout << imageCnt << endl;
+        Mat image = imread(filename, IMREAD_GRAYSCALE);
+        
+        if (!image.data ){
+            //printf("No image data \n");
+            tend = time(0);  
+            cout << "It took "<< difftime(tend, tstart) <<" second(s)."<< endl;
+            t = clock() - t;
+            printf ("It took me %ld clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
+            return -1;
+        }
+
+        //! [empty]
+        if(image.empty()){
+            std::cout << "Could not read the image: " << argv[1] << std::endl;
+            return 1;
+        }
+
+        auto [time, gpio] = readimageinfo (image);
+
+        // printing out the values
+        cout << __DATE__ << " " << __TIME__ << endl;
+        printf("%3.6f\n",time);
+        for (int j = 0; j < 4; j++) 
+    		cout << gpio[j];
+
+    	cout << endl;
     }
-
-    //! [empty]
-    if(image.empty())
-    {
-        std::cout << "Could not read the image: " << argv[1] << std::endl;
-        return 1;
-    }
-    //! [empty]
-
-    auto [time, gpio] = readimageinfo (image);
-
-    // printing out the values
-    cout << __DATE__ << " " << __TIME__ << endl;
-    printf("%3.6f\n",time);
-    for (int j = 0; j < 4; j++) 
-		cout << gpio[j];
-
-	cout << endl;
-
-    //! [imshow]
-    //namedWindow("Display Image", WINDOW_AUTOSIZE );
-    imshow("Display window: by Shahin", image);
-    
-    int k = waitKey(0); // Wait for a keystroke in the window
-    //! [imshow]
-
-    //! [imsave]
-
-    string str = argv[1];
-    if(k == 's')
-    {
-        imwrite(str.append(".png"), image);
-    }
-    //! [imsave]
 
     return 0;
 }
