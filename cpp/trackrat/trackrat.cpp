@@ -8,6 +8,7 @@
 #include <string>
 #include <tuple>
 #include <ctime> // time calculation
+#include <chrono> // time
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
 
@@ -73,6 +74,7 @@ int main(int argc, char** argv)
 
     int imageCnt = 0;
     clock_t t_start = clock();
+    auto start = chrono::high_resolution_clock::now();
     while(true){ 
 
         string filename = argv[1];
@@ -84,6 +86,8 @@ int main(int argc, char** argv)
         
         if (!image.data ){
             //printf("No image data \n");
+            auto finish = std::chrono::high_resolution_clock::now();
+            std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count() << "ns\n";
             clock_t t_end = clock();
             double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
             cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
