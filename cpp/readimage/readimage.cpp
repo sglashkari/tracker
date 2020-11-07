@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     }
 
     int imageCnt = 0;
-    clock_t t = clock();
+    clock_t t_start = clock();
     while(true){ 
 
         string filename = argv[1];
@@ -85,8 +85,11 @@ int main(int argc, char** argv)
         
         if (!image.data ){
             //printf("No image data \n");
-            t = clock() - t;
-            printf ("It took %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
+            clock_t t_end = clock();
+            double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
+            cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
+            cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
+            cout << " microseconds per frame." << endl; 
             return -1;
         }
 

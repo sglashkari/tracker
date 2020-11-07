@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     }
 
     int imageCnt = 0;
-    clock_t t = clock();
+    clock_t t_start = clock();
     while(true){ 
 
         string filename = argv[1];
@@ -84,8 +84,11 @@ int main(int argc, char** argv)
         
         if (!image.data ){
             //printf("No image data \n");
-            t = clock() - t;
-            printf ("It took %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
+            clock_t t_end = clock();
+            double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
+            cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
+            cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
+            cout << " microseconds per frame." << endl;
             return -1;
         }
 
@@ -122,15 +125,15 @@ int main(int argc, char** argv)
 
         // Filter by Area.
         params.filterByArea = true;
-        params.minArea = 150;//1500;
+        params.minArea = 100;
+        params.maxArea = 300;
 
         // Filter by Circularity
         params.filterByCircularity = true;
         params.minCircularity = 0.1;
 
         // Filter by Convexity
-        params.filterByConvexity = false; //true
-        //params.minConvexity = 0.87;
+        params.filterByConvexity = false;
 
         // Filter by Inertia
         params.filterByInertia = true;
@@ -150,8 +153,8 @@ int main(int argc, char** argv)
         // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
         // the size of the circle corresponds to the size of blob
 
-        Mat im_with_keypoints;
-        drawKeypoints( image_bin, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        //Mat im_with_keypoints;
+        //drawKeypoints( image_bin, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
         // Show blobs
         //imshow("keypoints", im_with_keypoints );
