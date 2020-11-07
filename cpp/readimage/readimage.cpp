@@ -76,10 +76,10 @@ int main(int argc, char** argv)
     while(true){ 
 
         string filename = argv[1];
-        string s_number = to_string(imageCnt++);
-        string str_number = string(4 - s_number.length(), '0') + s_number;
+        //string s_number = to_string(imageCnt++);
+        //string str_number = string(4 - s_number.length(), '0') + s_number;
 
-        filename = filename + s_number + ".pgm";
+        filename = filename + to_string(imageCnt++) + ".pgm";
         cout << filename << endl;
         Mat image = imread(filename, IMREAD_GRAYSCALE);
         
