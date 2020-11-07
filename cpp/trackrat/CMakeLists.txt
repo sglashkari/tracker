@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project( trackrat )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_executable( trackrat trackrat.cpp )
+target_link_libraries( trackrat ${OpenCV_LIBS} )

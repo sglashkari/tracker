@@ -80,8 +80,7 @@ int main(int argc, char** argv)
         //string str_number = string(4 - s_number.length(), '0') + s_number;
 
         filename = filename + to_string(imageCnt++) + ".pgm";
-        cout << filename << endl;
-        Mat image = imread(filename, IMREAD_GRAYSCALE);
+        Mat image = imread(filename, IMREAD_GRAYSCALE), image_bin;
         
         if (!image.data ){
             //printf("No image data \n");
@@ -98,12 +97,69 @@ int main(int argc, char** argv)
 
         auto [time, gpio] = readimageinfo (image);
 
+        cout << filename << endl;
         // printing out the values
-        printf("%3.6f\n",time);
+        printf("time = %3.6f, gpio = ",time);
         for (int j = 0; j < 4; j++) 
     		cout << gpio[j];
 
     	cout << endl;
+
+        // make binary image (see trackled.cpp)
+        int threshold_value = 200;
+        int threshold_type = 1;
+        int const max_binary_value = 255;
+
+        threshold(image, image_bin, threshold_value, max_binary_value, threshold_type );
+
+        // rat detection (see blob.cpp)
+            // Setup SimpleBlobDetector parameters.
+        SimpleBlobDetector::Params params;
+
+        // Change thresholds
+        params.minThreshold = 10;
+        params.maxThreshold = 200;
+
+        // Filter by Area.
+        params.filterByArea = true;
+        params.minArea = 150;//1500;
+
+        // Filter by Circularity
+        params.filterByCircularity = true;
+        params.minCircularity = 0.1;
+
+        // Filter by Convexity
+        params.filterByConvexity = false; //true
+        //params.minConvexity = 0.87;
+
+        // Filter by Inertia
+        params.filterByInertia = true;
+        params.minInertiaRatio = 0.01;
+
+
+        // Storage for blobs
+        vector<KeyPoint> keypoints;
+
+        // Set up detector with params
+        Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
+
+        // Detect blobs
+        detector->detect( image_bin, keypoints);
+
+        // Draw detected blobs as red circles.
+        // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
+        // the size of the circle corresponds to the size of blob
+
+        Mat im_with_keypoints;
+        drawKeypoints( image_bin, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+        // Show blobs
+        //imshow("keypoints", im_with_keypoints );
+        //int k = waitKey(0);
+
+        for (int i=0;i<keypoints.size();i++)
+            cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
+
     }
 
     return 0;
