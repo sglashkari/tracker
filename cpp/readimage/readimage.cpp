@@ -8,6 +8,8 @@
 #include <string>
 #include <tuple>
 #include <ctime> // time calculation
+#include <sstream>  // std::ostringstream
+#include <iomanip> // std::setw
 
 using namespace cv;
 using namespace std;
@@ -70,24 +72,21 @@ int main(int argc, char** argv)
     }
 
     int imageCnt = 0;
-    time_t tstart, tend; 
-    tstart = time(0);
-
-    clock_t t;
-    t = clock();
+    clock_t t = clock();
     while(true){ 
 
         string filename = argv[1];
-        filename = filename + to_string(imageCnt++) + ".pgm";
-        cout << imageCnt << endl;
+        string s_number = to_string(imageCnt++);
+        string str_number = string(4 - s_number.length(), '0') + s_number;
+
+        filename = filename + s_number + ".pgm";
+        cout << filename << endl;
         Mat image = imread(filename, IMREAD_GRAYSCALE);
         
         if (!image.data ){
             //printf("No image data \n");
-            tend = time(0);  
-            cout << "It took "<< difftime(tend, tstart) <<" second(s)."<< endl;
             t = clock() - t;
-            printf ("It took me %ld clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
+            printf ("It took %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
             return -1;
         }
 
@@ -100,7 +99,6 @@ int main(int argc, char** argv)
         auto [time, gpio] = readimageinfo (image);
 
         // printing out the values
-        cout << __DATE__ << " " << __TIME__ << endl;
         printf("%3.6f\n",time);
         for (int j = 0; j < 4; j++) 
     		cout << gpio[j];
