@@ -29,10 +29,13 @@ figure(1)
 tiledlayout(2,1)
 ax1 = nexttile;
 plot(t,x,'.')
+ylabel('x axis (pixels)')
 ax2 = nexttile;
 plot(t,y,'.')
+ylabel('y axis (pixels)')
 linkaxes([ax1 ax2],'x')
 xlim([t(1) t(end)])
+xlabel('time (sec)')
 
 figure(2)
 plot(x,y,'.')
