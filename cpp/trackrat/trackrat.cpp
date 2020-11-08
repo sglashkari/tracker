@@ -7,8 +7,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
-#include <ctime> // time calculation
-#include <chrono> // time
+#include <chrono> // time, chrono
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
 
@@ -73,25 +72,20 @@ int main(int argc, char** argv)
     }
 
     int imageCnt = 0;
-    clock_t t_start = clock();
     auto start = chrono::high_resolution_clock::now();
     while(true){ 
 
         string filename = argv[1];
-        //string s_number = to_string(imageCnt++);
-        //string str_number = string(4 - s_number.length(), '0') + s_number;
 
         filename = filename + to_string(imageCnt++) + ".pgm";
         Mat image = imread(filename, IMREAD_GRAYSCALE), image_bin;
         
         if (!image.data ){
             //printf("No image data \n");
-            auto finish = std::chrono::high_resolution_clock::now();
-            std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count() << "ns\n";
-            clock_t t_end = clock();
-            double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
-            cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
-            cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
+            auto finish = chrono::high_resolution_clock::now();
+            double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
+            cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
+            cout << " sec for " << --imageCnt << " frame(s).\n" << fixed  << setprecision(0) << duration/imageCnt*1e6;
             cout << " microseconds per frame." << endl;
             return -1;
         }
