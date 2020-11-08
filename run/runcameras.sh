@@ -7,26 +7,6 @@ then
 	exit
 fi
 
-# side webcam settings
-#v4l2-ctl \
-#--device=2 \
-#--set-ctrl=brightness=200 \
-#--set-ctrl=contrast=128 \
-#--set-ctrl=saturation=128 \
-#--set-ctrl=white_balance_temperature_auto=1 \
-#--set-ctrl=gain=255 \
-#--set-ctrl=power_line_frequency=2 \
-#--set-ctrl=white_balance_temperature=4000 \
-#--set-ctrl=sharpness=200 \
-#--set-ctrl=backlight_compensation=0 \
-#--set-ctrl=exposure_auto=0 \
-#--set-ctrl=exposure_absolute=1000 \
-#--set-ctrl=exposure_auto_priority=0 \
-#--set-ctrl=focus_absolute=0 \
-#--set-ctrl=focus_auto=0 \
-#--set-ctrl=zoom_absolute=150 \
-#--set-ctrl=led1_mode=1 
-
 dt=$(date +%Y-%m-%d_%H-%M-%S);
 echo $dt
 
