@@ -5,6 +5,7 @@
 #include <opencv2/highgui.hpp>
 #include <vector>
 #include <iostream>
+#include <fstream> // file operations
 #include <string>
 #include <tuple>
 #include <chrono> // time, chrono
@@ -71,13 +72,16 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    string directory = argv[1];
+    ofstream data_file;
+    string data_filename = directory + "tracking.dat";
+    data_file.open (data_filename, ios::out | ios::binary);
+
     int imageCnt = 0;
-    auto start = chrono::high_resolution_clock::now();
-    while(true){ 
+    auto start = chrono::high_resolution_clock::now(); // timer
+    while(true){
 
-        string filename = argv[1];
-
-        filename = filename + to_string(imageCnt++) + ".pgm";
+        string filename = directory + "frame-" + to_string(imageCnt++) + ".pgm";
         Mat image = imread(filename, IMREAD_GRAYSCALE), image_bin;
         
         if (!image.data ){
@@ -85,14 +89,16 @@ int main(int argc, char** argv)
             auto finish = chrono::high_resolution_clock::now();
             double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
             cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
-            cout << " sec for " << --imageCnt << " frame(s).\n" << fixed  << setprecision(0) << duration/imageCnt*1e6;
-            cout << " microseconds per frame." << endl;
+            cout << " sec for " << --imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
+            cout << " milliseconds per frame." << endl;
+            data_file.close();
+            cout << "Tracking data saved in " << data_filename << endl;
             return -1;
         }
 
         //! [empty]
         if(image.empty()){
-            std::cout << "Could not read the image: " << argv[1] << std::endl;
+            std::cout << "Could not read the image: " << filename << std::endl;
             return 1;
         }
 
@@ -160,6 +166,16 @@ int main(int argc, char** argv)
 
         for (int i=0;i<keypoints.size();i++)
             cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
+
+        // write data to file 
+        if (keypoints.size()==1){
+            data_file.write((char*) &time, sizeof(double));
+            data_file.write((char*) &gpio[0], 4 * sizeof(int));
+            float x = (float) keypoints[0].pt.x;
+            float y = (float) keypoints[0].pt.y;
+            data_file.write((char*) &x, sizeof(float));
+            data_file.write((char*) &y, sizeof(float));
+        }
 
     }
 
