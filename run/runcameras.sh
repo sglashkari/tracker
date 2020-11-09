@@ -14,6 +14,7 @@ mkdir ~/Videos/$dt;
 
 gnome-terminal -- bash -c "cd ~/Videos/${dt}; ~/flycapture/bin/FlyCapture2Test"
 
+# Top webcam
 top_cam_available=$(ls /dev/video* | grep video0 | wc -l);
 if [ $top_cam_available -eq 1 ]; then
 	# settings
