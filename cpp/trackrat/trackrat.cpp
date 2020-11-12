@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     auto start = chrono::high_resolution_clock::now(); // timer
     while(true){
 
-        string filename = directory + "frame-" + to_string(imageCnt++) + ".pgm";
+        string filename = directory + "frame-" + to_string(imageCnt) + ".pgm";
         Mat image = imread(filename, IMREAD_GRAYSCALE), image_bin;
         
         if (!image.data ){
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
             auto finish = chrono::high_resolution_clock::now();
             double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
             cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
-            cout << " sec for " << --imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
+            cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
             cout << " milliseconds per frame." << endl;
             data_file.close();
             cout << "Tracking data saved in " << data_filename << endl;
@@ -167,15 +167,22 @@ int main(int argc, char** argv)
         for (int i=0;i<keypoints.size();i++)
             cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
 
+        bool flag = (keypoints.size() == 1); // successful or not
+        float x = -1;
+        float y = -1;
+        
         // write data to file 
-        if (keypoints.size()==1){
-            data_file.write((char*) &time, sizeof(double));
-            data_file.write((char*) &gpio[0], 4 * sizeof(int));
-            float x = (float) keypoints[0].pt.x;
-            float y = (float) keypoints[0].pt.y;
-            data_file.write((char*) &x, sizeof(float));
-            data_file.write((char*) &y, sizeof(float));
+        if (flag){
+            x = (float) keypoints[0].pt.x;
+            y = (float) keypoints[0].pt.y;
         }
+        
+        data_file.write((char*) &imageCnt, sizeof(int));
+        data_file.write((char*) &flag, sizeof(bool));
+        data_file.write((char*) &time, sizeof(double));
+        data_file.write((char*) &gpio[0], 4 * sizeof(int));
+        data_file.write((char*) &x, sizeof(float));
+        data_file.write((char*) &y, sizeof(float));
 
     }
 
