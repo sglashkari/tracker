@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
     if ( argc != 2 && argc != 3)
     {
-        printf("usage: DisplayImage.out <Image_Path> [Option]\n");
+        printf("usage: readimage <Image_Path> [Option]\n");
         return -1;
     }
 
