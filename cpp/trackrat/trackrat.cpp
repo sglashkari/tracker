@@ -81,19 +81,19 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    string directory = argv[1];
+    string directory = argv[1], filename;
     ofstream data_file;
     string data_filename = directory + "tracking.dat";
     data_file.open (data_filename, ios::out | ios::binary);
 
     Mat image, image_bin;
-
+    int row = 1440, col = 708;
     int imageCnt = 0;
     auto start = chrono::high_resolution_clock::now(); // timer
     while(true){
 
         if (argc ==3 && (strcmp(argv[2],"-r") == 0 || strcmp(argv[2],"--raw") == 0)){
-            filename = path + "frame-" + to_string(imageCnt) + ".raw";
+            filename = directory + "frame-" + to_string(imageCnt) + ".raw";
 
             ifstream rawimagefile;
             rawimagefile.open (filename, ios::in | ios::binary);
@@ -103,11 +103,13 @@ int main(int argc, char** argv)
                     cout << "Could not read the image: " << filename << endl;
                     return -1;
                 } else {
-                    clock_t t_end = clock();
-                    double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
-                    cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
-                    cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
-                    cout << " microseconds per frame." << endl; 
+                    auto finish = chrono::high_resolution_clock::now();
+                    double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
+                    cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
+                    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
+                    cout << " milliseconds per frame." << endl;
+                    data_file.close();
+                    cout << "Tracking data saved in " << data_filename << endl;
                     return 0;
                 }
             }
@@ -123,13 +125,14 @@ int main(int argc, char** argv)
             image = Mat(row, col, CV_8UC1, pixels);
 
         } else {
-            filename = path + "frame-" + to_string(imageCnt) + ".pgm";
+            filename = directory + "frame-" + to_string(imageCnt) + ".pgm";
             image = imread(filename, IMREAD_GRAYSCALE);
         }
         
         if (!image.data ){
             if (imageCnt == 0){
                 cout << "No image data" << endl;
+                return -1;
             } else {
                 auto finish = chrono::high_resolution_clock::now();
                 double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
@@ -138,8 +141,8 @@ int main(int argc, char** argv)
                 cout << " milliseconds per frame." << endl;
                 data_file.close();
                 cout << "Tracking data saved in " << data_filename << endl;
+                return 0;
             }
-            return -1;
         }
 
         //! [empty]
