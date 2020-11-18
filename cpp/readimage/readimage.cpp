@@ -10,6 +10,7 @@
 #include <ctime> // time calculation
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
+#include <fstream> // file operations
 
 using namespace cv;
 using namespace std;
@@ -65,37 +66,83 @@ tuple<double, vector<int>> readimageinfo (Mat image)
 int main(int argc, char** argv)
 {
 
-    if ( argc != 2 )
+    if ( argc != 2 && argc != 3)
     {
-        printf("usage: DisplayImage.out <Image_Path>\n");
+        printf("usage: DisplayImage.out <Image_Path> [Option]\n");
         return -1;
     }
+
+    if ( argc ==3 && strcmp(argv[2],"-r") != 0 && strcmp(argv[2],"--raw") != 0)
+    {
+        std::cerr << "Usage: " << argv[0] << " " << argv[1] << " [Option]"
+            << "Options:\n"
+              << "\t-r,--raw RAW File\tSpecify the image file type"
+              << std::endl;
+        return 1;
+    }    
+
+
+    string path = argv[1], filename;
+    int row = 1440, col = 708;
 
     int imageCnt = 0;
     clock_t t_start = clock();
     while(true){ 
 
-        string filename = argv[1];
         //string s_number = to_string(imageCnt++);
         //string str_number = string(4 - s_number.length(), '0') + s_number;
 
-        filename = filename + to_string(imageCnt++) + ".pgm";
+        Mat image;
+
+        if (argc ==3 && (strcmp(argv[2],"-r") == 0 || strcmp(argv[2],"--raw") == 0)){
+            filename = path + "frame-" + to_string(imageCnt) + ".raw";
+
+            ifstream rawimagefile;
+            rawimagefile.open (filename, ios::in | ios::binary);
+
+            if (rawimagefile.fail()){
+                if (imageCnt == 0){
+                    cout << "Could not read the image: " << filename << endl;
+                    return -1;
+                } else {
+                    clock_t t_end = clock();
+                    double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
+                    cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
+                    cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
+                    cout << " microseconds per frame." << endl; 
+                    return 0;
+                }
+            }
+
+            char pixels[row*col];
+            //pixels = new char [size];
+            rawimagefile.read (pixels, row*col);
+
+            
+            //fread(pixels,row*col,1,f);
+            rawimagefile.close();
+
+            image = Mat(row, col, CV_8UC1, pixels);
+
+        } else {
+            filename = path + "frame-" + to_string(imageCnt) + ".pgm";
+            image = imread(filename, IMREAD_GRAYSCALE);
+        }
+
         cout << filename << endl;
-        Mat image = imread(filename, IMREAD_GRAYSCALE);
         
         if (!image.data ){
-            //printf("No image data \n");
             clock_t t_end = clock();
             double time_taken = double(t_end - t_start) / double(CLOCKS_PER_SEC);
             cout << "Time taken by program is : " << fixed  << time_taken << setprecision(5);
             cout << " sec for " << imageCnt << " frames.\n" << fixed  << setprecision(0) << time_taken/imageCnt*1e6;
             cout << " microseconds per frame." << endl; 
-            return -1;
+            return 0;
         }
 
         //! [empty]
         if(image.empty()){
-            std::cout << "Could not read the image: " << argv[1] << std::endl;
+            cout << "Could not read the image: " << argv[1] << endl;
             return 1;
         }
 
@@ -106,6 +153,7 @@ int main(int argc, char** argv)
         for (int j = 0; j < 4; j++) 
     		cout << gpio[j];
 
+        imageCnt++;
     	cout << endl;
     }
 

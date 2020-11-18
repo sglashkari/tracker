@@ -66,7 +66,12 @@ int main(int argc, char** argv)
         printf("usage: DisplayImage.out <Image_Path>\n");
         return -1;
     }
-    Mat image = imread( argv[1], IMREAD_GRAYSCALE); //IMREAD_COLOR);
+
+    uchar *data = new uchar[rows * cols];
+    uchar pixel = data[y*cols+x];
+    Mat image( rows, cols, CV_8U, data );
+
+    //Mat image = imread( argv[1], IMREAD_GRAYSCALE); //IMREAD_COLOR);
     
     if (!image.data )
     {

@@ -15,7 +15,9 @@ function track_led2(mat_filename)
 clc;
 close all;
 if nargin==0
-    [file, path] = uigetfile('D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mat');
+    %mat_filename = 'D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mat';
+    mat_filename = '/home/shahin/Downloads/Neuralynx/2020-10-25_15-59-09.mat';
+    [file, path] = uigetfile(mat_filename);
     mat_filename = fullfile(path,file);
 end
 load(mat_filename,'position');
