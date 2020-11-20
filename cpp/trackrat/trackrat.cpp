@@ -207,17 +207,6 @@ int main(int argc, char** argv)
         // Detect blobs
         detector->detect( image_bin, keypoints);
 
-        // Draw detected blobs as red circles.
-        // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
-        // the size of the circle corresponds to the size of blob
-
-        //Mat im_with_keypoints;
-        //drawKeypoints( image_bin, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
-        // Show blobs
-        //imshow("keypoints", im_with_keypoints );
-        //int k = waitKey(0);
-
         for (int i=0;i<keypoints.size();i++)
             cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
 
@@ -238,10 +227,14 @@ int main(int argc, char** argv)
         data_file.write((char*) &x, sizeof(float));
         data_file.write((char*) &y, sizeof(float));
 
-        //drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        // Draw detected blobs as red circles.
+        // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
+        // the size of the circle corresponds to the size of blob
+
+        drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
         // Show blobs
-        //imshow("keypoints", image_circle );
-        //int k = waitKey(0);
+        imshow("keypoints", image_circle );
+        int k = waitKey(1);
 
         imageCnt++;
     }
