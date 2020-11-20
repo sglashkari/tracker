@@ -17,17 +17,17 @@
 clear;
 close all;
 clc
-Filename = '~/Downloads/tracking.dat'; %'~/flycapture/bin/tracking.dat';
+Filename = '~/Downloads/test-raw/tracking.dat'; %'~/flycapture/bin/tracking.dat';
 FileID = fopen(Filename,'r');
 %Header = arrayfun(@(~) fgetl(FileID), 1:24, 'UniformOutput', false)';
 %header_length = ftell(FileID);
-format(:,1) = {'double'; 'int32'; 'int32'; 'int32'; 'int32'; 'single'; 'single'};
-format(:,2) = mat2cell(ones(7,2),ones(1,7));
-format(:,3) = split('time,p1,p2,p3,p4,x,y',",");
+%format(:,1) = {'double'; 'int32'; 'int32'; 'int32'; 'int32'; 'single'; 'single'};
+%format(:,2) = mat2cell(ones(7,2),ones(1,7));
+%format(:,3) = split('time,p1,p2,p3,p4,x,y',",");
 
-% format(:,1) = {'uint32';'uint32';'double'; 'uint32'; 'uint32'; 'uint32'; 'uint32'; 'single'; 'single'};
-% format(:,2) = mat2cell(ones(9,2),ones(1,9));
-% format(:,3) = split('frame,flag,time,p1,p2,p3,p4,x,y',",");
+format(:,1) = {'uint32';'uint32';'double'; 'uint32'; 'uint32'; 'uint32'; 'uint32'; 'single'; 'single'};
+format(:,2) = mat2cell(ones(9,2),ones(1,9));
+format(:,3) = split('frame,flag,time,p1,p2,p3,p4,x,y',",");
 
 m = memmapfile(Filename,'Format',format); %, 'Offset', header_length);
 fclose(FileID);
@@ -36,7 +36,7 @@ Samples = m.Data;
 x = [Samples.x]';
 y = [Samples.y]';
 p3 = [Samples.p3]';
-%flag = [Samples.flag]';
+flag = [Samples.flag]';
 time = [Samples.time]'; %seconds
 plot((time-64)/64*pi)
 
@@ -74,3 +74,4 @@ plot(diff(t))
 (t(end)-t(1))/60
 figure(4)
 plot(p3)
+t_off = t(p3==0);

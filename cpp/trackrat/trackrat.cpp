@@ -86,8 +86,12 @@ int main(int argc, char** argv)
     string data_filename = directory + "tracking.dat";
     data_file.open (data_filename, ios::out | ios::binary);
 
-    Mat image, image_bin;
-    int row = 1440, col = 708;
+    int col = 1536, row = 740;
+    char pixels[row*col];
+    ifstream rawimagefile;
+
+    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle;
+    
     int imageCnt = 0;
     auto start = chrono::high_resolution_clock::now(); // timer
     while(true){
@@ -114,42 +118,43 @@ int main(int argc, char** argv)
                 }
             }
 
-            char pixels[row*col];
-            //pixels = new char [size];
+            rawimagefile.seekg (0, rawimagefile.end);
+            int length = rawimagefile.tellg();
+            if (length != row*col){
+                cout << "Image size (" << length << ") is not equal to row x col (" << row*col << ")." << endl;
+                return -1;
+            }
+            rawimagefile.seekg (0, rawimagefile.beg);
+
             rawimagefile.read (pixels, row*col);
-
-            
-            //fread(pixels,row*col,1,f);
             rawimagefile.close();
-
-            image = Mat(row, col, CV_8UC1, pixels);
+            image = Mat(row, col, CV_8U, pixels); 
 
         } else {
             filename = directory + "frame-" + to_string(imageCnt) + ".pgm";
             image = imread(filename, IMREAD_GRAYSCALE);
-        }
-        
-        if (!image.data ){
-            if (imageCnt == 0){
-                cout << "No image data" << endl;
-                return -1;
-            } else {
-                auto finish = chrono::high_resolution_clock::now();
-                double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
-                cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
-                cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
-                cout << " milliseconds per frame." << endl;
-                data_file.close();
-                cout << "Tracking data saved in " << data_filename << endl;
-                return 0;
-            }
-        }
 
-        //! [empty]
-        if(image.empty()){
-            std::cout << "Could not read the image: " << filename << std::endl;
-            return 1;
-        }
+            if (!image.data ){
+                if (imageCnt == 0){
+                    cout << "No image data" << endl;
+                    return -1;
+                } else {
+                    auto finish = chrono::high_resolution_clock::now();
+                    double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
+                    cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
+                    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
+                    cout << " milliseconds per frame." << endl;
+                    data_file.close();
+                    cout << "Tracking data saved in " << data_filename << endl;
+                    return 0;
+                }
+            }
+
+            if(image.empty()){
+                std::cout << "Could not read the image: " << filename << std::endl;
+                return 1;
+            }
+        } 
 
         auto [time, gpio] = readimageinfo (image);
 
@@ -232,6 +237,11 @@ int main(int argc, char** argv)
         data_file.write((char*) &gpio[0], 4 * sizeof(int));
         data_file.write((char*) &x, sizeof(float));
         data_file.write((char*) &y, sizeof(float));
+
+        //drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        // Show blobs
+        //imshow("keypoints", image_circle );
+        //int k = waitKey(0);
 
         imageCnt++;
     }

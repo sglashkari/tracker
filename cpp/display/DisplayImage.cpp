@@ -7,11 +7,13 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <fstream> // file operations
 
 using namespace cv;
 using namespace std;
 //! [includes]
 
+/*
 // function to convert decimal to binary 
 vector<int> decToBinary(int n) 
 { 
@@ -58,35 +60,67 @@ tuple<double, vector<int>> readimageinfo (Mat image)
 
 	return {time, gpio};
 }
-
+*/
 int main(int argc, char** argv)
 {
-    if ( argc != 2 )
+    if ( argc != 2 && argc != 3 )
     {
         printf("usage: DisplayImage.out <Image_Path>\n");
         return -1;
     }
 
-    uchar *data = new uchar[rows * cols];
-    uchar pixel = data[y*cols+x];
-    Mat image( rows, cols, CV_8U, data );
+    int col = 1536, row = 740;
+    char pixels[row*col];
+    string filename = argv[1];
+    ifstream rawimagefile;
+    	
+    Mat image = Mat(row, col, CV_8U, pixels);
+	
+    if ((argc ==3) && (strcmp(argv[2],"-r") == 0 || strcmp(argv[2],"--raw") == 0)){
+    	
+    	rawimagefile.open (filename, ios::in | ios::binary);
+    	
+    	if (rawimagefile.fail()){
+    			cout << "Could not read the image: " << filename << endl;
+    			return -1;
+    	}
+    	
+        rawimagefile.seekg (0, rawimagefile.end);
+    	int length = rawimagefile.tellg();
+    	rawimagefile.seekg (0, rawimagefile.beg);
+
+    	
+    	rawimagefile.read (pixels, length);
+    	rawimagefile.close();
+    	image = Mat(row, col, CV_8U, pixels);	
+
+    
+    } else {
+    	
+    	image = imread(filename, IMREAD_GRAYSCALE);
+
+    	if (!image.data )
+    	{
+    		printf("No image data \n");
+    		return -1;
+    	}
+
+    //! [empty]
+    	if(image.empty())
+    	{
+    		std::cout << "Could not read the image: " << argv[1] << std::endl;
+    		return 1;
+    	}
+
+    }
+	
 
     //Mat image = imread( argv[1], IMREAD_GRAYSCALE); //IMREAD_COLOR);
     
-    if (!image.data )
-    {
-        printf("No image data \n");
-        return -1;
-    }
 
     //! [empty]
-    if(image.empty())
-    {
-        std::cout << "Could not read the image: " << argv[1] << std::endl;
-        return 1;
-    }
-    //! [empty]
 
+    /*
     auto [time, gpio] = readimageinfo (image);
 
     // printing out the values
@@ -96,11 +130,12 @@ int main(int argc, char** argv)
 		cout << gpio[j];
 
 	cout << endl;
+	*/
 
     //! [imshow]
     //namedWindow("Display Image", WINDOW_AUTOSIZE );
     imshow("Display window: by Shahin", image);
-    
+
     int k = waitKey(0); // Wait for a keystroke in the window
     //! [imshow]
 
