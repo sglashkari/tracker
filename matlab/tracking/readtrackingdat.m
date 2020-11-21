@@ -75,3 +75,5 @@ plot(diff(t))
 figure(4)
 plot(p3)
 t_off = t(p3==0);
+figure(5);
+plot(x(flag==1),y(flag==1),'.')

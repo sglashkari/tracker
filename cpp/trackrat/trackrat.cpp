@@ -11,6 +11,7 @@
 #include <chrono> // time, chrono
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
+#include <algorithm>    // std::max
 
 using namespace cv;
 using namespace std;
@@ -90,7 +91,9 @@ int main(int argc, char** argv)
     char pixels[row*col];
     ifstream rawimagefile;
 
-    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle;
+    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped;
+    float x = -1, y = -1, x1 = 0, x2 = col, y1 = 0, y2 = row;
+    int flag = 0;
     
     int imageCnt = 0;
     auto start = chrono::high_resolution_clock::now(); // timer
@@ -171,7 +174,22 @@ int main(int argc, char** argv)
         int threshold_type = 1;
         int const max_binary_value = 255;
 
-        threshold(image, image_bin, threshold_value, max_binary_value, threshold_type );
+        //crop image to the region of interest (ROI)
+        if (flag == 1){
+            x1 = (x>25) ? x-25 : 0;
+            y1 = (y>25) ? y-25 : 0; 
+            x2 = (x+25> col) ? col-x1 : 50; 
+            y2 = (y+25> row) ? row-y1 : 50;
+
+            Rect roi(x1, y1, x2, y2);
+            image_cropped = image(roi);
+        } else {
+            x1 = 0;
+            y1 = 0;
+            image_cropped = image;
+        }
+
+        threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
 
         // rat detection (see blob.cpp)
             // Setup SimpleBlobDetector parameters.
@@ -183,7 +201,7 @@ int main(int argc, char** argv)
 
         // Filter by Area.
         params.filterByArea = true;
-        params.minArea = 100;
+        params.minArea = 150;
         params.maxArea = 300;
 
         // Filter by Circularity
@@ -210,14 +228,17 @@ int main(int argc, char** argv)
         for (int i=0;i<keypoints.size();i++)
             cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
 
-        int flag = (int) (keypoints.size()==1); // successful (1) or not (0,2,3,..)
-        float x = -1;
-        float y = -1;
-        
+        flag = (int) (keypoints.size()==1); // successful (1) or not (0,2,3,..)
+
         // write data to file 
         if (flag == 1){
+            keypoints[0].pt.x = x1 + keypoints[0].pt.x;
+            keypoints[0].pt.y = y1 + keypoints[0].pt.y;
             x = (float) keypoints[0].pt.x;
             y = (float) keypoints[0].pt.y;
+        } else {
+            x = -1;
+            y = -1;
         }
 
         data_file.write((char*) &imageCnt, sizeof(int));
@@ -234,7 +255,7 @@ int main(int argc, char** argv)
         drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
         // Show blobs
         imshow("keypoints", image_circle );
-        int k = waitKey(1);
+        //int k = waitKey(1);
 
         imageCnt++;
     }

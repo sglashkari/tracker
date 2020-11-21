@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     string filename = argv[1];
     ifstream rawimagefile;
     	
-    Mat image = Mat(row, col, CV_8U, pixels);
+    Mat image = Mat(row, col, CV_8U, pixels), image_crop;
 	
     if ((argc ==3) && (strcmp(argv[2],"-r") == 0 || strcmp(argv[2],"--raw") == 0)){
     	
@@ -99,26 +99,20 @@ int main(int argc, char** argv)
     	
     	image = imread(filename, IMREAD_GRAYSCALE);
 
-    	if (!image.data )
-    	{
+    	if (!image.data ){
     		printf("No image data \n");
     		return -1;
     	}
 
-    //! [empty]
-    	if(image.empty())
-    	{
+    	if(image.empty()){
     		std::cout << "Could not read the image: " << argv[1] << std::endl;
     		return 1;
     	}
 
     }
 	
-
-    //Mat image = imread( argv[1], IMREAD_GRAYSCALE); //IMREAD_COLOR);
-    
-
-    //! [empty]
+	Rect roi(10, 10, 100, 100);
+	Mat image_cropped = image(roi);
 
     /*
     auto [time, gpio] = readimageinfo (image);
@@ -134,7 +128,8 @@ int main(int argc, char** argv)
 
     //! [imshow]
     //namedWindow("Display Image", WINDOW_AUTOSIZE );
-    imshow("Display window: by Shahin", image);
+    imshow("Original image", image);
+    imshow("Cropped image",image_cropped);
 
     int k = waitKey(0); // Wait for a keystroke in the window
     //! [imshow]
