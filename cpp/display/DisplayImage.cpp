@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     string filename = argv[1];
     ifstream rawimagefile;
     	
-    Mat image = Mat(row, col, CV_8U, pixels), image_crop;
+    Mat image = Mat(row, col, CV_8U, pixels), image_crop, image_bin;
 	
     if ((argc ==3) && (strcmp(argv[2],"-r") == 0 || strcmp(argv[2],"--raw") == 0)){
     	
@@ -111,8 +111,13 @@ int main(int argc, char** argv)
 
     }
 	
-	Rect roi(10, 10, 100, 100);
-	Mat image_cropped = image(roi);
+	// make binary image (see trackled.cpp)
+    int threshold_value = 200;
+    int threshold_type = 1;
+    int const max_binary_value = 255;
+
+    threshold(image, image_bin, threshold_value, max_binary_value, threshold_type );
+    cout << countNonZero(image_bin) << endl;
 
     /*
     auto [time, gpio] = readimageinfo (image);
@@ -129,7 +134,7 @@ int main(int argc, char** argv)
     //! [imshow]
     //namedWindow("Display Image", WINDOW_AUTOSIZE );
     imshow("Original image", image);
-    imshow("Cropped image",image_cropped);
+    imshow("Binary image",image_bin);
 
     int k = waitKey(0); // Wait for a keystroke in the window
     //! [imshow]

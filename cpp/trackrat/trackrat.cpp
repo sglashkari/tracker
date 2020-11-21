@@ -88,6 +88,7 @@ int main(int argc, char** argv)
     data_file.open (data_filename, ios::out | ios::binary);
 
     int col = 1536, row = 740;
+    //int col = 1440, row = 708;
     char pixels[row*col];
     ifstream rawimagefile;
 
@@ -169,27 +170,30 @@ int main(int argc, char** argv)
 
     	cout << endl;
 
-        // make binary image (see trackled.cpp)
-        int threshold_value = 200;
-        int threshold_type = 1;
-        int const max_binary_value = 255;
-
         //crop image to the region of interest (ROI)
         if (flag == 1){
-            x1 = (x>25) ? x-25 : 0;
-            y1 = (y>25) ? y-25 : 0; 
-            x2 = (x+25> col) ? col-x1 : 50; 
-            y2 = (y+25> row) ? row-y1 : 50;
+            x1 = (x>30) ? x-30 : 0;
+            y1 = (y>30) ? y-30 : 0; 
+            x2 = (x+30> col) ? col-x1 : 60; 
+            y2 = (y+30> row) ? row-y1 : 60;
 
             Rect roi(x1, y1, x2, y2);
             image_cropped = image(roi);
         } else {
             x1 = 0;
             y1 = 0;
+            x2 = col;
+            y2 = row;
             image_cropped = image;
         }
 
+        // make binary image (see trackled.cpp)
+        int threshold_value = 200;
+        int threshold_type = 1;
+        int const max_binary_value = 255;
+
         threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
+
 
         // rat detection (see blob.cpp)
             // Setup SimpleBlobDetector parameters.
@@ -223,12 +227,17 @@ int main(int argc, char** argv)
         Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
 
         // Detect blobs
-        detector->detect( image_bin, keypoints);
+        if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
+            detector->detect( image_bin, keypoints);
 
-        for (int i=0;i<keypoints.size();i++)
-            cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
+            for (int i=0;i<keypoints.size();i++)
+                cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
 
-        flag = (int) (keypoints.size()==1); // successful (1) or not (0,2,3,..)
+            flag = (int) (keypoints.size()==1); // successful (1) or not (0,2,3,..)
+        } else {
+            flag = 0;
+        }
+
 
         // write data to file 
         if (flag == 1){
