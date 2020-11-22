@@ -36,6 +36,7 @@ Samples = m.Data;
 x = [Samples.x]';
 y = [Samples.y]';
 p3 = [Samples.p3]';
+frame = [Samples.frame]';
 flag = [Samples.flag]';
 time = [Samples.time]'; %seconds
 plot((time-64)/64*pi)
@@ -73,7 +74,19 @@ figure(3)
 plot(diff(t))
 (t(end)-t(1))/60
 figure(4)
-plot(p3)
+plot(t,p3)
 t_off = t(p3==0);
+t_off(end) = [];
+frame_off = frame(p3==0);
+frame_off(end) = []
 figure(5);
 plot(x(flag==1),y(flag==1),'.')
+
+t50 = t_off(1);
+t60 = t_off(end);
+t60-t50
+
+% 15433,4 - 15578
+t51 = t(frame==15433);
+t61 = t(frame==15578);
+t61-t51

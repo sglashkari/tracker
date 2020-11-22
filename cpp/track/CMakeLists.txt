@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project( trackled )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_executable( trackled trackled.cpp )
+target_link_libraries( trackled ${OpenCV_LIBS} )
