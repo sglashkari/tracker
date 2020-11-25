@@ -23,7 +23,15 @@ int main(int argc, char** argv)
     return -1;
   }
 	
-  while(1){
+  int frame_width = cap.get(CV_CAP_PROP_FRAME_WIDTH);
+  int frame_height = cap.get(CV_CAP_PROP_FRAME_HEIGHT); 
+  int fps = 1; //cap.get(CAP_PROP_FPS);
+
+  cout << "frame_width" << frame_width << " frame_height" << frame_height << endl;
+  // Define the codec and create VideoWriter object.The output is stored in 'outcpp.avi' file. 
+  VideoWriter video("output-cpp.avi",CV_FOURCC('M','J','P','G'),fps, Size(frame_width,frame_height));
+
+  while(true){
 
     Mat frame;
     // Capture frame-by-frame
@@ -33,17 +41,21 @@ int main(int argc, char** argv)
     if (frame.empty())
       break;
 
+    // Write the frame into the file 'outcpp.avi'
+    video.write(frame);
+
     // Display the resulting frame
     imshow( "Frame", frame );
 
     // Press  ESC on keyboard to exit
-    char c=(char)waitKey(25);
+    char c=(char)waitKey(0);
     if(c==27)
       break;
   }
  
   // When everything done, release the video capture object
   cap.release();
+  video.release();
 
   // Closes all the frames
   destroyAllWindows();

@@ -70,22 +70,44 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    if ( argc ==3 && strcmp(argv[2],"-r") != 0 && strcmp(argv[2],"--raw") != 0){
+    if ( argc ==3 && strcmp(argv[2],"-r") != 0 && strcmp(argv[2],"--raw") != 0 && strcmp(argv[2],"-v") != 0){
         std::cerr << "Usage: " << argv[0] << " " << argv[1] << " [Option]"
         << "Options:\n"
-        << "\t-r,--raw RAW File\tSpecify the image file type"
+        << "\t-r,--raw RAW File\tSpecify the image file type as raw\n"
+        << "\t-v\tSpecify the file type as video\n"
         << std::endl;
         return 1;
-    }    
+    }
 
+    // Create a VideoCapture object and open the input file
+    // If the input is the web camera, pass 0 instead of the video file name
+    VideoCapture cap(argv[1]); 
 
-    int col = 1536, row = 740;
+    // Check if camera opened successfully
+    if(!cap.isOpened() && argc == 3 && strcmp(argv[2],"-v") == 0){
+        cout << "Error opening video stream or file" << endl;
+        return -1;
+    }
+
+    //int col = 1536, row = 740;
+    int col = 1440, row = 708;
     char pixels[row*col];
     string directory = argv[1], filename;
     ifstream rawimagefile;
 
-    Mat image = Mat(row, col, CV_8U, pixels);
-    
+    Mat image = Mat(row, col, CV_8UC1, pixels), imageRGB;
+
+    size_t found = directory.find_last_of("/\\");
+    directory = directory.substr(0,found+1);
+    std::cout << " path: " << directory << '\n';
+
+    //string directory = text.substr(0, directory.find("what "));
+    string videoname = directory + "output.avi";
+
+    int fps = 1;
+    VideoWriter video(videoname,CV_FOURCC('M','J','P','G'),fps, Size(col,row));
+    cout << "Video file created!" << endl;
+
     int imageCnt = 0;
     clock_t t_start = clock();
 
@@ -119,12 +141,17 @@ int main(int argc, char** argv){
 
             rawimagefile.read (pixels, row*col);
             rawimagefile.close();
-            image = Mat(row, col, CV_8U, pixels);   
+            image = Mat(row, col, CV_8UC1, pixels);   
 
 
         } else {
-            filename = directory + "frame-" + to_string(imageCnt) + ".pgm";
-            image = imread(filename, IMREAD_GRAYSCALE);
+            if (argc ==3 && strcmp(argv[2],"-v") == 0) {
+                // Capture frame-by-frame
+                cap >> image;
+            } else {
+                filename = directory + "frame-" + to_string(imageCnt) + ".pgm";
+                image = imread(filename, IMREAD_GRAYSCALE);
+            }
 
             if (!image.data ){
                 if (imageCnt == 0){
@@ -141,7 +168,7 @@ int main(int argc, char** argv){
             }
 
             if(image.empty()){
-                std::cout << "Could not read the image: " << filename << std::endl;
+                cout << "Could not read the image: " << filename << endl;
                 return 1;
             }
 
@@ -156,10 +183,26 @@ int main(int argc, char** argv){
 
         cout << endl;
 
+        if (strcmp(argv[2],"-v") != 0){
+            //cvtColor(imageBGR, image, CV_GRAY2BGR);
+            cvtColor(image, imageRGB, CV_GRAY2RGB);
+        } else {
+            imageRGB = image;
+        }
+
+        video.write(imageRGB);
+
         imshow("Display window: by Shahin", image);
         int k = waitKey(0); // Wait for a keystroke in the window
         imageCnt++;
     }
+
+    // When everything done, release the video capture object
+    cap.release();
+    video.release();
+
+    // Closes all the frames
+    destroyAllWindows();
 
     return 0;
 }
