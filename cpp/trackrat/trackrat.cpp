@@ -87,15 +87,20 @@ int main(int argc, char** argv)
     string data_filename = directory + "tracking.dat";
     data_file.open (data_filename, ios::out | ios::binary);
 
-    int col = 1536, row = 740;
+    int col = 1600, row = 580;
+    //int col = 1536, row = 740;
     //int col = 1440, row = 708;
     char pixels[row*col];
     ifstream rawimagefile;
 
-    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped;
+    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped, image_RGB, image_circle_RGB;
     float x = -1, y = -1, x1 = 0, x2 = col, y1 = 0, y2 = row;
     int flag = 0;
     
+    int fps = 240;
+    VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row)); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4')
+    VideoWriter video2(directory + "tracked-video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row));
+
     int imageCnt = 0;
     auto start = chrono::high_resolution_clock::now(); // timer
     while(true){
@@ -260,14 +265,23 @@ int main(int argc, char** argv)
         // Draw detected blobs as red circles.
         // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
         // the size of the circle corresponds to the size of blob
-
         drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+        cvtColor(image, image_RGB, CV_GRAY2RGB);
+        cvtColor(image_circle, image_circle_RGB, CV_GRAY2RGB);
+
+        video1.write(image_RGB);
+        video2.write(image_circle_RGB);
+
         // Show blobs
-        imshow("keypoints", image_circle );
+        //imshow("keypoints", image_circle );
         //int k = waitKey(1);
 
         imageCnt++;
     }
+
+    video1.release();
+    video2.release();
 
     return 0;
 }

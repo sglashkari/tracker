@@ -99,13 +99,13 @@ int main(int argc, char** argv){
 
     size_t found = directory.find_last_of("/\\");
     directory = directory.substr(0,found+1);
-    std::cout << " path: " << directory << '\n';
+    std::cout << "Path: " << directory << '\n';
 
     //string directory = text.substr(0, directory.find("what "));
     string videoname = directory + "output.avi";
 
-    int fps = 1;
-    VideoWriter video(videoname,CV_FOURCC('M','J','P','G'),fps, Size(col,row));
+    int fps = 30;
+    VideoWriter video(videoname, CV_FOURCC('X','2','6','4'),fps, Size(col,row)); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4')
     cout << "Video file created!" << endl;
 
     int imageCnt = 0;
@@ -193,7 +193,7 @@ int main(int argc, char** argv){
         video.write(imageRGB);
 
         imshow("Display window: by Shahin", image);
-        int k = waitKey(0); // Wait for a keystroke in the window
+        int k = waitKey(1); // Wait for a keystroke in the window
         imageCnt++;
     }
 
