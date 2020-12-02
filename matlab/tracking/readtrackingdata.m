@@ -1,18 +1,19 @@
 function [t, x, y, p, frame, flag] = readtrackingdata(exp_directory)
-%%READBINARY reads tracking.dat file with the header
-% StartTime is the vector of initial times (one value for each maze)
-% EndTime is the vector of final times (one value for each maze)
-% Times are in seconds
+%%READTRACKINGDATA reads tracking.dat file which is the output of the
+% trackrat (git) and extracts the data
+%
+% if only 3 outputs are requested (t, x, y) then the result only shows the 
+% correctly tracked data points (flag == 1)
+% otherwise all the extracted data will spit out
+% if no output is requested, then the 
 % SGL 2020-12-01
 
 if nargin == 0
-    exp_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-    Filename = fullfile(exp_directory,'Videos','tracking.dat');
-end
-if nargin < 3
-    TimeEV = readevent(fullfile(Nlx_directory,'Events.nev'));
-    StartTime = TimeEV(1:2:end);
-    EndTime = TimeEV(2:2:end);
+    exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+    exp_directory = uigetdir(exp_directory,'Select Experiment Folder');
+    if exp_directory == 0
+        return;
+    end
 end
 
 Filename = fullfile(exp_directory,'Videos','tracking.dat');
@@ -35,41 +36,29 @@ p4 = [Samples.p4]';
 p = [p1 p2 p3 p4];
 flag = [Samples.flag]';
 frame = [Samples.frame]';
-time = [Samples.time]'; %seconds
+time = [Samples.time]'; % seconds (wrapped)
 t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
 
-
-plot((time-64)/64*pi)
-
-hold on
-t = unwrap((time-64)/64*pi)/pi*64;
-plot(t)
-figure(2)
-subplot(2,1,1)
-plot(frame,x,'.')
-subplot(2,1,2)
-plot(frame,y,'.')
-% % Time Range
-% idx = [];
-% for i=1:length(StartTime)
-%     idx = [idx; find(Time >= StartTime(i) & Time <= EndTime(i))];
-% end
-% 
-
-if nargout == 0 % If no output only plot the results:
-    close all
-    figure(1)
-    plot(X, 480 - Y,'.');
-    axis equal
-    axis([0 640 0 480])
-    figure(2)
-    plot(Time, Y,'.',Time(idx), Y(idx),'*');
-    clear t
-elseif narout == 3 % discard the ones that are not been correctly tracked
+% If a few outputs are requested discard the ones that are not been correctly tracked
+if nargout <= 3 
     x = x (flag == 1);
     y = y (flag == 1);
     t = t (flag == 1);
 end
+
+% If no output only plot the results:
+if nargout == 0 
+    close all
+    figure(1)
+    plot(x,y,'.');
+    axis equal
+    figure(2)
+    subplot(2,1,1)
+    plot(t, x,'.');
+    subplot(2,1,2)
+    plot(t, y,'.');
+    clear t
+else
         
 
 end

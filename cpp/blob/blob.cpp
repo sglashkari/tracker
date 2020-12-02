@@ -14,7 +14,7 @@ int main( int argc, char** argv )
 {
 
 	// Read image
-	Mat im = imread( "frame-0.pgm.jpg", IMREAD_GRAYSCALE );
+	Mat im = imread(argv[1], IMREAD_GRAYSCALE );
 
 	// Setup SimpleBlobDetector parameters.
 	SimpleBlobDetector::Params params;

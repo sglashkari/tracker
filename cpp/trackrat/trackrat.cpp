@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     char pixels[row*col];
     ifstream rawimagefile;
 
-    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped, image_RGB, image_circle_RGB;
+    Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped, image_RGB;
     float x = -1, y = -1, x1 = 0, x2 = col, y1 = 0, y2 = row;
     int flag = 0;
     
@@ -268,10 +268,9 @@ int main(int argc, char** argv)
         drawKeypoints(image, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
         cvtColor(image, image_RGB, CV_GRAY2RGB);
-        cvtColor(image_circle, image_circle_RGB, CV_GRAY2RGB);
 
         video1.write(image_RGB);
-        video2.write(image_circle_RGB);
+        video2.write(image_circle);
 
         // Show blobs
         //imshow("keypoints", image_circle );

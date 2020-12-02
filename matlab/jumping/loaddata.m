@@ -3,7 +3,9 @@
 % A = 
 % time = A.data(:,18);
 clear
-Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
+Nlx_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02/Neuralynx';
+Nlx_directory = uigetdir(Nlx_directory,'Select Neuralynx Folder');
+
 listing = dir(fullfile(Nlx_directory,'**','cl-maze*.*'));
 names = string({listing.name}');
 folders = string({listing.folder}');
@@ -43,7 +45,7 @@ for index = 1:N
     all_ones = ones(length(time),1);
     
     cluster_maze = timetable(time,all_ones,'VariableNames',maze_tt_cl(index));
-    index
+    disp index;
     if index == 1
         cluster_mazes = cluster_maze;
     else

@@ -8,6 +8,7 @@ HeaderExtractionFlag = 1;
 ExtractionMode = 1;
 ExtractionModeVector = [];
 
+
 if ispc
     addpath('../../pkgs/MatlabImportExport_v6.0.0'); % Neuralynx packages for Windows
     [Timestamps, EventIDs, TTLs, Extras, EventStrings, Header] = ...
