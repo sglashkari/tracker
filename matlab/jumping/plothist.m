@@ -1,15 +1,13 @@
 % lap detector
 % SGL 2020-11-28
 clc; close all;
-if ~exist('pos','var')
-    exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+if ~exist('ppcm','var')
     mat_filename = fullfile(exp_directory,'data.mat');
-    load(mat_filename,'pos', 'spike')
+    load(mat_filename, 'pos', 'spike', 'ppcm')
 end
-% plot(pos.x, pos.y,'.')
-% axis equal
 
-figure(2)
+figure(1)
 % recording
 r1i = 105.221068;
 r1f = 703.846944;
@@ -17,8 +15,8 @@ r2i = 945.026778;
 r2f = 1341.248894;
 
 xmax = 166;
-rectangle('Position',[r1i,0,r1f-r1i,xmax],'FaceColor','y')
 hold on
+rectangle('Position',[r1i,0,r1f-r1i,xmax],'FaceColor','y')
 rectangle('Position',[r2i,0,r2f-r2i,xmax],'FaceColor','y')
 
 % maze
@@ -26,20 +24,23 @@ m1i = 408.650168;
 m1f = 677.921799;
 m2i = 988.727761;
 m2f = 1303.765711;
-   
+
 rectangle('Position',[m1i,0,m1f-m1i,xmax],'FaceColor',[0 .8 .8])
-hold on
 rectangle('Position',[m2i,0,m2f-m2i,xmax],'FaceColor',[0 .8 .8])
 
+%% lap detection
 % lap detection range
 t1i = 110;
 t1f = 659;
 t2i = 945;
 t2f = 1282;
 
-t = pos.t(((pos.t > t1i) & (pos.t < t1f)) | ((pos.t > t2i) & (pos.t < t2f)));
-x = pos.x(((pos.t > t1i) & (pos.t < t1f)) | ((pos.t > t2i) & (pos.t < t2f)));
-y = pos.y(((pos.t > t1i) & (pos.t < t1f)) | ((pos.t > t2i) & (pos.t < t2f)));
+t_crop_idx = ((pos.t > t1i) & (pos.t < t1f)) | ((pos.t > t2i) & (pos.t < t2f));
+t = pos.t(t_crop_idx);
+x = pos.x(t_crop_idx);
+y = pos.y(t_crop_idx);
+vx = pos.vx(t_crop_idx);
+vy = pos.vy(t_crop_idx);
 
 plot(t, x, '.')
 
@@ -50,50 +51,254 @@ x_thresh = 82;
 ylim([0 xmax])
 
 % times that the rats jump (left to right and right to left)
-j1 = t(diff(x > x_thresh) == -1);
-%j2 = t(diff(x > x_thresh) == 1);
+jr = t(diff(x > x_thresh) == -1);
+jl = t(diff(x > x_thresh) == 1);
 
-N = length(j1)-1;
-lr = ones(N,1); % lap to right
-ll = ones(N,1); % lap to left
+N = length(jr)-1;
+left = ones(N,1); % lap at left
+right = ones(N,1); % lap at right
 x1 = ones(N,1);
 x2 = ones(N,1);
-    
+
 for i=1:N
     % lap
-    tl = t(t>=j1(i) & t<=j1(i+1));
-    [x1(i), idx] = min(x(t>j1(i) & t<j1(i+1)));
-    lr(i) = tl(idx);
-    [x2(i), idx] = max(x(t>j1(i) & t<j1(i+1)));
-    ll(i) = tl(idx);
+    tl = t(t>=jr(i) & t<=jr(i+1));
+    [x1(i), idx] = min(x(t>jr(i) & t<jr(i+1)));
+    left(i) = tl(idx);
+    [x2(i), idx] = max(x(t>jr(i) & t<jr(i+1)));
+    right(i) = tl(idx);
 end
 
 % exception for beginning and end
-tl = t(t<j1(1));
-[x20, idx] = max(x(t<j1(1)));
+tl = t(t<jr(1));
+[x20, idx] = max(x(t<jr(1)));
 l20 = tl(idx);
 x2 = [x20;x2];
-ll = [l20;ll];
-tl = t(t>j1(N+1));
-[x1(N+1), idx] = min(x(t>j1(N+1)));
-lr(N+1) = tl(idx);
+right = [l20;right];
+tl = t(t>jr(N+1));
+[x1(N+1), idx] = min(x(t>jr(N+1)));
+left(N+1) = tl(idx);
 
-plot(lr, x1, 'pk', 'MarkerSize',15)
-plot(ll, x2, 'sk', 'MarkerSize',15)
+plot(left, x1, 'pk', 'MarkerSize',15)
+plot(right, x2, 'sk', 'MarkerSize',15)
 
-plot(j1, x_thresh * ones(size(j1)), 'hk', 'MarkerSize',15)
+plot(jr, x_thresh * ones(size(jr)), 'hk', 'MarkerSize',15)
 
-figure(3)
+figure(2)
 for i = 1:N+1
-   subplot(N+1,2,2*i-1);
-   plot(x, t)
-   xlim([0 xmax])
-   ylim([ll(i) lr(i)])
-   if i==N+1
-       break;
-   end
-   subplot(N+1,2,2*i);
-   plot(x, t)
-   xlim([0 xmax])
-   ylim([lr(i) ll(i+1)])
+    subplot(N+1,2,2*i-1);
+    plot(x, t)
+    xlim([0 xmax])
+    ylim([right(i) left(i)])
+    if i==N+1
+        break;
+    end
+    subplot(N+1,2,2*i);
+    plot(x, t)
+    xlim([0 xmax])
+    ylim([left(i) right(i+1)])
 end
+
+%% plot with arrows
+figure(3)
+I = imread('/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02/Videos/frame-43000.pgm');
+imshow(2*I+50);
+figure(3)
+hold on
+quiver(x * ppcm,y * ppcm,vx * ppcm,vy * ppcm,2);
+
+%% picking the frame where the jump has happened (left to right jump: jr)
+addpath('../tracking');
+[time, ~, ~, ~, frame] = readtrackingdata(exp_directory);
+jump_frames = ones(N+1,2);
+for i=1:N+1
+    jump_frames(i,1) = frame(time==jr(i));
+    if i==N+1
+        break;
+    end
+    jump_frames(i,2) = frame(time==jl(i));
+end
+
+%%
+lap_no = zeros(2*N+2,1);
+figure(4)
+for i = 1:N+1
+    figure(2*(i+1));
+    subplot(8,1,1:5);
+    I = imread([exp_directory filesep 'Videos' filesep 'frame-' num2str(jump_frames(i,1)) '.pgm']);
+    imshow(2*I+25);
+    figure(2*(i+1));
+    hold on
+    lap.idx = (t>=right(i) & t<=left(i));
+    xlap = x(lap.idx);
+    ylap = y(lap.idx);
+    vxlap = vx(lap.idx);
+    vylap = vy(lap.idx);
+    quiver(xlap * ppcm,ylap * ppcm,vxlap * ppcm,vylap * ppcm);
+    saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i-1) '.ppm'])
+    lap_no(2*i-1) = 1;
+    if i==N+1
+        continue;
+    end
+    figure(2*(i+1)+1);
+    subplot(8,1,1:5);
+    if i == 7
+        I = imread([exp_directory filesep 'Videos' filesep 'frame-' num2str(jump_frames(i-1,2)) '.pgm']);
+    else
+        I = imread([exp_directory filesep 'Videos' filesep 'frame-' num2str(jump_frames(i,2)) '.pgm']);
+    end
+    imshow(2*I+25);
+    figure(2*(i+1)+1);
+    hold on
+    lap.idx = (t>=left(i) & t<=right(i+1));
+    xlap = x(lap.idx);
+    ylap = y(lap.idx);
+    vxlap = vx(lap.idx);
+    vylap = vy(lap.idx);
+    quiver(xlap * ppcm,ylap * ppcm,vxlap * ppcm,vylap * ppcm);
+    saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i) '.ppm'])
+    lap_no(2*i) = 1;
+end
+
+%% interpolation
+dt = 1/1000; % interpolation 1 kHz
+posi.t = pos.t(1):dt: pos.t(end);
+posi.t = posi.t(((posi.t > r1i) & (posi.t < r1f)) | ((posi.t > r2i) & (posi.t < r2f))); % pos when neural recording is on
+% interpolation for position
+posi.x = interp1(pos.t, pos.x, posi.t);
+posi.y = interp1(pos.t, pos.y, posi.t);
+
+%% Histogram
+figure(100)
+hist.bin_size = 2; % 2 cm
+hist.edges = 0:hist.bin_size:size(I,2)/ppcm; % size of image to cm
+hist.posi = histcounts(posi.x,hist.edges) * dt; % seconds in each bin (2 cm)
+h(1) = subplot(3,1,1);
+histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
+ylabel('Occupancy (sec)')
+zoom xon
+xlim([hist.edges(1) hist.edges(end)])
+
+h(2) = subplot(3,1,2);
+cluster = spike([spike.no] == 2);
+hist.cluster = histcounts(cluster.x,hist.edges); % spikes in each bin (2 cm)
+histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
+ylabel('Number of spikes')
+zoom xon
+xlim([hist.edges(1) hist.edges(end)])
+
+h(3) = subplot(3,1,3);
+hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
+
+ylabel('Rate Map (Hz)')
+xlabel('Horizontal position (cm)')
+xlim([hist.edges(1) hist.edges(end)])
+zoom xon
+linkaxes(h,'x')
+
+%% Plotting the spikes on the path
+colors = {'#D95319', '#EDB120', '#7E2F8E', 'yellow', '#A2142F', 'red', 'magenta','green'};
+for j=1:1%length(spike([spike.m]==3)) % (maze 3 is the whole recorded experiment)
+    % only looking at spike.no = j
+    cluster = spike([spike.no] == j);
+    color = colors{mod(j,length(colors))+1};
+    
+    for i = 1:N+1
+        figure(2*(i+1));
+        ax1 = subplot(8,1,1:5);
+        hold on
+        lap.spike.idx = (cluster.t >=right(i) & cluster.t <=left(i)); % lap
+        lap.spike.t = cluster.t(lap.spike.idx);
+        lap.spike.x = cluster.x(lap.spike.idx);
+        lap.spike.y = cluster.y(lap.spike.idx);
+        
+        lap.pos.idx = posi.t >=right(i) & posi.t <=left(i); %lap
+        lap.pos.t = posi.t(lap.pos.idx);
+        lap.pos.x = posi.x(lap.pos.idx);
+        lap.pos.y = posi.y(lap.pos.idx);
+        
+        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'*','MarkerEdgeColor',color, 'MarkerFaceColor', color);
+        title([cluster.name '_l' num2str(2*i-1)], 'Interpreter', 'none');
+        
+        % histogram
+        hist.posi = histcounts(lap.pos.x,hist.edges) * dt; % seconds in each bin
+        ax2 = subplot(8,1,6);
+        histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
+        ylabel('Occupancy (sec)')
+        zoom xon
+        xlim([hist.edges(1) hist.edges(end)])
+        
+        ax3 = subplot(8,1,7);
+        hist.cluster = histcounts(lap.spike.x,hist.edges); % spikes in each bin
+        histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
+        ylabel('Number of spikes')
+        zoom xon
+        xlim([hist.edges(1) hist.edges(end)])
+        
+        ax4 = subplot(8,1,8);
+        hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+        ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
+        
+        ylabel('Rate Map (Hz)')
+        xlabel('Horizontal position (cm)')
+        xlim([hist.edges(1) hist.edges(end)])
+        zoom xon
+        
+        linkaxes([],'x')
+        set(gcf, 'Position', [100 100 1536 1175]);
+        saveas(gcf,[exp_directory filesep 'Analysis' filesep cluster.name '-lap_' num2str(2*i-1) '.jpg'])
+        set(h_img,'Visible','off')
+
+        if i==N+1 || i==13
+            continue;
+        end
+        figure(2*(i+1)+1);
+        h(1) = subplot(8,1,1:5) / ppcm;
+        hold on
+        lap.spike.idx = (cluster.t >=left(i) & cluster.t <=right(i+1));
+        lap.spike.t = cluster.t(lap.spike.idx);
+        lap.spike.x = cluster.x(lap.spike.idx);
+        lap.spike.y = cluster.y(lap.spike.idx);
+
+        lap.pos.idx = ((posi.t > t1i) & (posi.t < t1f)) | ((posi.t > t2i) & (posi.t < t2f)); % pos when neural recording is on
+        lap.pos.idx = posi.t >=left(i) & posi.t <=right(i+1); %lap
+        lap.pos.t = posi.t(lap.pos.idx);
+        lap.pos.x = posi.x(lap.pos.idx);
+        lap.pos.y = posi.y(lap.pos.idx);
+        
+        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'*','MarkerEdgeColor',color, 'MarkerFaceColor', color);
+        title([cluster.name '_l' num2str(2*i)], 'Interpreter', 'none');
+        
+        % histogram
+        hist.posi = histcounts(lap.pos.x,hist.edges) * dt; % seconds in each bin
+        h(2) = subplot(8,1,6);
+        histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
+        ylabel('Occupancy (sec)')
+        xlim([hist.edges(1) hist.edges(end)])
+        zoom xon
+        
+        h(3) = subplot(8,1,7);
+        hist.cluster = histcounts(lap.spike.x,hist.edges); % spikes in each bin
+        histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
+        ylabel('Number of spikes')
+        xlim([hist.edges(1) hist.edges(end)])
+        zoom xon
+        
+        h(4) = subplot(8,1,8);
+        hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+        ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
+        
+        ylabel('Rate Map (Hz)')
+        xlabel('Horizontal position (cm)')
+        xlim([hist.edges(1) hist.edges(end)])
+        zoom xon
+        
+        set(gcf, 'Position', [100 100 1536 1175]);
+        linkaxes(h,'x')
+        
+        saveas(gcf,[exp_directory filesep 'Analysis' filesep cluster.name '-lap_' num2str(2*i) '.jpg'])
+        set(h_img,'Visible','off')
+    end
+end
+    

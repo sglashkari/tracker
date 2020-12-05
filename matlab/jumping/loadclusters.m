@@ -26,7 +26,8 @@ load(mat_filename,'A')
 %% Postion data
 addpath('../tracking');
 [t, x, y] = readtrackingdata(exp_directory);
-
+offset = 48.5827;
+   
 % velocity
 % 2020-03 5 ft = 1524 mm = 480 pixels (each pixel = 3.175 mm)
 % 2020-10 3 ft = 914 mm = 840 pixels = norm([296 372]-[1136 348],2) 
@@ -36,6 +37,9 @@ ppcm = norm([296 372]-[1136 348])/91.4; % pixels per cm
 pos.t = t;
 pos.x = x / ppcm; % cm
 pos.y = y / ppcm; % cm
+
+%%%% ONLY for DAY 2 !!!! %%%%%%
+
 % theta = rad2deg(atan2(pos.y-240, pos.x-320));
 % pos.th = wrapTo360(theta);
 
@@ -57,7 +61,7 @@ for index = 1:N
     spike(index).no = index;
     spike(index).ti = str2double(A{index}.textdata{12})*1e-6;
     spike(index).tf = str2double(A{index}.textdata{13})*1e-6;
-    spike(index).t = (A{index}.data(:,18))*1e-6;
+    spike(index).t = (A{index}.data(:,18))*1e-6-offset;
     % interpolation for position
     spike(index).x = interp1(pos.t, pos.x, spike(index).t);
     spike(index).y = interp1(pos.t, pos.y, spike(index).t);
@@ -68,4 +72,4 @@ for index = 1:N
 end
 toc
 
-save(mat_filename,'pos','spike','-append');
+save(mat_filename,'pos','spike','ppcm', 'offset', '-append');
