@@ -1,20 +1,30 @@
 % This program plots the data for Rat 913
 % The data include the occupancy and histogram of the spikes and the
+% sequential firing of multiple spikes before jumping
 % SGL 2020-11-28
 clc; close all;
 exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
 [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename, 'pos', 'spike', 'ppcm')
+colors = {'#D95319', '#EDB120', '#7E2F8E', 'yellow', '#A2142F', 'red', 'magenta','green'};
+
+[img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','frame-43000.pgm'), 'Select Image File');
+img_filename = fullfile(img_directory, img_file);
+I = imread(img_filename);
+
+%% Plotting the position vs time and marking neural recording times, 
+% maze times and lap detection times
 
 figure(1)
-% recording times
+% neural recording times
 r1i = 105.221068;
 r1f = 703.846944;
 r2i = 945.026778;
 r2f = 1341.248894;
 
-xmax = 166;
+xmax = round(size(I,2)/ppcm);
+
 hold on
 rectangle('Position',[r1i,0,r1f-r1i,xmax],'FaceColor','y')
 rectangle('Position',[r2i,0,r2f-r2i,xmax],'FaceColor','y')
@@ -28,7 +38,6 @@ m2f = 1303.765711;
 rectangle('Position',[m1i,0,m1f-m1i,xmax],'FaceColor',[0 .8 .8])
 rectangle('Position',[m2i,0,m2f-m2i,xmax],'FaceColor',[0 .8 .8])
 
-%% lap detection
 % lap detection times
 t1i = 110;
 t1f = 659;
@@ -42,9 +51,7 @@ y = pos.y(t_crop_idx);
 vx = pos.vx(t_crop_idx);
 vy = pos.vy(t_crop_idx);
 
-figure(1)
 plot(t, x, '.')
-
 ylim([0 xmax])
 
 % jump detection
@@ -54,6 +61,7 @@ x_thresh = 82;
 time_right_jump = t(diff(x > x_thresh) == -1);
 time_left_jump = t(diff(x > x_thresh) == 1);
 x_right_jump = x(diff(x > x_thresh) == -1);
+x_left_jump = x(diff(x > x_thresh) == 1);
 
 % lap detection
 N = length(time_right_jump)-1;
@@ -84,8 +92,13 @@ left(N+1) = tl(idx);
 plot(left, x1, 'pk', 'MarkerSize',15)
 plot(right, x2, 'sk', 'MarkerSize',15)
 
-plot(time_right_jump, x_right_jump, 'hk', 'MarkerSize',15)
+plot(time_right_jump, x_right_jump, 'hg', 'MarkerSize',15)
+plot(time_left_jump, x_left_jump, 'hr', 'MarkerSize',15)
 
+set(gcf, 'Position', [100 100 2000 1200]);
+saveas(gcf,[exp_directory filesep 'overall_view.jpg'])
+        
+%% Plotting time vs horizontal position for all laps
 figure(2)
 for i = 1:N+1
     subplot(N+1,2,2*i-1);
@@ -101,13 +114,16 @@ for i = 1:N+1
     ylim([left(i) right(i+1)])
 end
 
-%% plot with arrows
+%% plotting the occupancy with arrows showing the velocity
 figure(3)
-I = imread('/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02/Videos/frame-43000.pgm');
+
 imshow(2*I+50);
 figure(3)
 hold on
 quiver(x * ppcm,y * ppcm,vx * ppcm,vy * ppcm,2);
+
+set(gcf, 'Position', [100 100 1536 1175]);
+saveas(gcf,[exp_directory filesep 'occupancy_with_velocity.jpg'])
 
 %% picking the frame where the jump has happened (left to right jump: jr)
 addpath('../tracking');
@@ -170,37 +186,32 @@ posi.t = posi.t(((posi.t > r1i) & (posi.t < r1f)) | ((posi.t > r2i) & (posi.t < 
 posi.x = interp1(pos.t, pos.x, posi.t);
 posi.y = interp1(pos.t, pos.y, posi.t);
 
-%% Histogram
+%% Rate map histogram for each cluster for the whole experiment
 figure(100)
-hist.bin_size = 2; % 2 cm
-hist.edges = 0:hist.bin_size:size(I,2)/ppcm; % size of image to cm
-hist.posi = histcounts(posi.x,hist.edges) * dt; % seconds in each bin (2 cm)
-h(1) = subplot(3,1,1);
-histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
-ylabel('Occupancy (sec)')
-zoom xon
+for j=length(spike([spike.m]==3)):-1:1
+    a(j) = subplot(length(spike([spike.m]==3)),1,length(spike([spike.m]==3))-j+1);
+    color = colors{mod(j,length(colors))+1};
+    hist.bin_size = 2; % 2 cm
+    hist.edges = 0:hist.bin_size:size(I,2)/ppcm; % size of image to cm
+    hist.posi = histcounts(posi.x,hist.edges) * dt; % seconds in each bin (2 cm)
+    cluster = spike([spike.no] == j);
+    hist.cluster = histcounts(cluster.x,hist.edges); % spikes in each bin (2 cm)
+    hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+    histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',color); %rate map histogram
+    if j == length(spike([spike.m]==3))
+        title('Rate Map (Hz)')
+    end
+    ylabel(['cluster ' num2str(cluster.no)]);
+    zoom xon
+    
+end
+set(gcf, 'Position', [100 100 1600 1300]);
+linkaxes(a,'x')
 xlim([hist.edges(1) hist.edges(end)])
-
-h(2) = subplot(3,1,2);
-cluster = spike([spike.no] == 2);
-hist.cluster = histcounts(cluster.x,hist.edges); % spikes in each bin (2 cm)
-histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
-ylabel('Number of spikes')
-zoom xon
-xlim([hist.edges(1) hist.edges(end)])
-
-h(3) = subplot(3,1,3);
-hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
-ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
-
-ylabel('Rate Map (Hz)')
 xlabel('Horizontal position (cm)')
-xlim([hist.edges(1) hist.edges(end)])
-zoom xon
-linkaxes(h,'x')
+saveas(gcf,[exp_directory filesep 'Ratemap.jpg'])
 
 %% Plotting the spikes on the path
-colors = {'#D95319', '#EDB120', '#7E2F8E', 'yellow', '#A2142F', 'red', 'magenta','green'};
 % loooking at all the clusters in the whole experiment (maze 3 is the whole recorded experiment)
 for j=1:length(spike([spike.m]==3))
     % only looking at spike.no = j
@@ -237,7 +248,7 @@ for j=1:length(spike([spike.m]==3))
         
         ax4 = subplot(8,1,8);
         hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
-        ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
+        histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',color); %rate map histogram
         
         ylabel('Rate Map (Hz)')
         xlabel('Horizontal position (cm)')
@@ -282,7 +293,7 @@ for j=1:length(spike([spike.m]==3))
         
         ax4 = subplot(8,1,8);
         hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
-        ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
+        histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',color); %rate map histogram
         
         ylabel('Rate Map (Hz)')
         xlabel('Horizontal position (cm)')
@@ -351,6 +362,5 @@ for i = 1:N
     
     set(gcf, 'Position', [100 100 1536 1175]);
     saveas(gcf,[exp_directory filesep 'Analysis' filesep 'CSC-lap_' num2str(2*i) '.jpg'])
-    saveas(gcf,[exp_directory filesep 'Analysis' filesep 'CSC-lap_' num2str(2*i) '.fig'])
 
 end
