@@ -1,14 +1,14 @@
-% lap detector
+% This program plots the data for Rat 913
+% The data include the occupancy and histogram of the spikes and the
 % SGL 2020-11-28
 clc; close all;
 exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
-if ~exist('ppcm','var')
-    mat_filename = fullfile(exp_directory,'data.mat');
-    load(mat_filename, 'pos', 'spike', 'ppcm')
-end
+[datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
+mat_filename = fullfile(exp_directory, datafile);
+load(mat_filename, 'pos', 'spike', 'ppcm')
 
 figure(1)
-% recording
+% recording times
 r1i = 105.221068;
 r1f = 703.846944;
 r2i = 945.026778;
@@ -19,7 +19,7 @@ hold on
 rectangle('Position',[r1i,0,r1f-r1i,xmax],'FaceColor','y')
 rectangle('Position',[r2i,0,r2f-r2i,xmax],'FaceColor','y')
 
-% maze
+% maze times
 m1i = 408.650168;
 m1f = 677.921799;
 m2i = 988.727761;
@@ -29,7 +29,7 @@ rectangle('Position',[m1i,0,m1f-m1i,xmax],'FaceColor',[0 .8 .8])
 rectangle('Position',[m2i,0,m2f-m2i,xmax],'FaceColor',[0 .8 .8])
 
 %% lap detection
-% lap detection range
+% lap detection times
 t1i = 110;
 t1f = 659;
 t2i = 945;
@@ -42,19 +42,21 @@ y = pos.y(t_crop_idx);
 vx = pos.vx(t_crop_idx);
 vy = pos.vy(t_crop_idx);
 
+figure(1)
 plot(t, x, '.')
-
-x_thresh = 82;
-
-%plot(t, xmax * (x > x_thresh), '.-r')
 
 ylim([0 xmax])
 
-% times that the rats jump (left to right and right to left)
-jr = t(diff(x > x_thresh) == -1);
-jl = t(diff(x > x_thresh) == 1);
+% jump detection
+x_thresh = 82;
 
-N = length(jr)-1;
+% times that the rats jump (left to right and right to left)
+time_right_jump = t(diff(x > x_thresh) == -1);
+time_left_jump = t(diff(x > x_thresh) == 1);
+x_right_jump = x(diff(x > x_thresh) == -1);
+
+% lap detection
+N = length(time_right_jump)-1;
 left = ones(N,1); % lap at left
 right = ones(N,1); % lap at right
 x1 = ones(N,1);
@@ -62,27 +64,27 @@ x2 = ones(N,1);
 
 for i=1:N
     % lap
-    tl = t(t>=jr(i) & t<=jr(i+1));
-    [x1(i), idx] = min(x(t>jr(i) & t<jr(i+1)));
+    tl = t(t>=time_right_jump(i) & t<=time_right_jump(i+1));
+    [x1(i), idx] = min(x(t>time_right_jump(i) & t<time_right_jump(i+1)));
     left(i) = tl(idx);
-    [x2(i), idx] = max(x(t>jr(i) & t<jr(i+1)));
+    [x2(i), idx] = max(x(t>time_right_jump(i) & t<time_right_jump(i+1)));
     right(i) = tl(idx);
 end
 
 % exception for beginning and end
-tl = t(t<jr(1));
-[x20, idx] = max(x(t<jr(1)));
+tl = t(t<time_right_jump(1));
+[x20, idx] = max(x(t<time_right_jump(1)));
 l20 = tl(idx);
 x2 = [x20;x2];
 right = [l20;right];
-tl = t(t>jr(N+1));
-[x1(N+1), idx] = min(x(t>jr(N+1)));
+tl = t(t>time_right_jump(N+1));
+[x1(N+1), idx] = min(x(t>time_right_jump(N+1)));
 left(N+1) = tl(idx);
 
 plot(left, x1, 'pk', 'MarkerSize',15)
 plot(right, x2, 'sk', 'MarkerSize',15)
 
-plot(jr, x_thresh * ones(size(jr)), 'hk', 'MarkerSize',15)
+plot(time_right_jump, x_right_jump, 'hk', 'MarkerSize',15)
 
 figure(2)
 for i = 1:N+1
@@ -112,14 +114,14 @@ addpath('../tracking');
 [time, ~, ~, ~, frame] = readtrackingdata(exp_directory);
 jump_frames = ones(N+1,2);
 for i=1:N+1
-    jump_frames(i,1) = frame(time==jr(i));
+    jump_frames(i,1) = frame(time==time_right_jump(i));
     if i==N+1
         break;
     end
-    jump_frames(i,2) = frame(time==jl(i));
+    jump_frames(i,2) = frame(time==time_left_jump(i));
 end
 
-%%
+%% Fgiures of the rat in the mid-jump
 lap_no = zeros(2*N+2,1);
 figure(4)
 for i = 1:N+1
@@ -135,7 +137,7 @@ for i = 1:N+1
     vxlap = vx(lap.idx);
     vylap = vy(lap.idx);
     quiver(xlap * ppcm,ylap * ppcm,vxlap * ppcm,vylap * ppcm);
-    saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i-1) '.ppm'])
+    %saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i-1) '.ppm'])
     lap_no(2*i-1) = 1;
     if i==N+1
         continue;
@@ -156,7 +158,7 @@ for i = 1:N+1
     vxlap = vx(lap.idx);
     vylap = vy(lap.idx);
     quiver(xlap * ppcm,ylap * ppcm,vxlap * ppcm,vylap * ppcm);
-    saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i) '.ppm'])
+    %saveas(gcf,[exp_directory filesep 'Analysis' filesep num2str(2*i) '.ppm'])
     lap_no(2*i) = 1;
 end
 
@@ -199,12 +201,13 @@ linkaxes(h,'x')
 
 %% Plotting the spikes on the path
 colors = {'#D95319', '#EDB120', '#7E2F8E', 'yellow', '#A2142F', 'red', 'magenta','green'};
-for j=1:1%length(spike([spike.m]==3)) % (maze 3 is the whole recorded experiment)
+% loooking at all the clusters in the whole experiment (maze 3 is the whole recorded experiment)
+for j=1:length(spike([spike.m]==3))
     % only looking at spike.no = j
     cluster = spike([spike.no] == j);
     color = colors{mod(j,length(colors))+1};
     
-    for i = 1:N+1
+    for i = 1:N+1 % lap (should be written in a better format)
         figure(2*(i+1));
         ax1 = subplot(8,1,1:5);
         hold on
@@ -218,7 +221,7 @@ for j=1:1%length(spike([spike.m]==3)) % (maze 3 is the whole recorded experiment
         lap.pos.x = posi.x(lap.pos.idx);
         lap.pos.y = posi.y(lap.pos.idx);
         
-        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'*','MarkerEdgeColor',color, 'MarkerFaceColor', color);
+        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'o','MarkerEdgeColor','black', 'MarkerFaceColor', color);
         title([cluster.name '_l' num2str(2*i-1)], 'Interpreter', 'none');
         
         % histogram
@@ -226,15 +229,11 @@ for j=1:1%length(spike([spike.m]==3)) % (maze 3 is the whole recorded experiment
         ax2 = subplot(8,1,6);
         histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
         ylabel('Occupancy (sec)')
-        zoom xon
-        xlim([hist.edges(1) hist.edges(end)])
         
         ax3 = subplot(8,1,7);
         hist.cluster = histcounts(lap.spike.x,hist.edges); % spikes in each bin
         histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
         ylabel('Number of spikes')
-        zoom xon
-        xlim([hist.edges(1) hist.edges(end)])
         
         ax4 = subplot(8,1,8);
         hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
@@ -242,63 +241,116 @@ for j=1:1%length(spike([spike.m]==3)) % (maze 3 is the whole recorded experiment
         
         ylabel('Rate Map (Hz)')
         xlabel('Horizontal position (cm)')
-        xlim([hist.edges(1) hist.edges(end)])
-        zoom xon
         
-        linkaxes([],'x')
+        linkaxes([ax2 ax3 ax4],'x')
+        xlim([hist.edges(1) hist.edges(end)])
         set(gcf, 'Position', [100 100 1536 1175]);
         saveas(gcf,[exp_directory filesep 'Analysis' filesep cluster.name '-lap_' num2str(2*i-1) '.jpg'])
         set(h_img,'Visible','off')
-
-        if i==N+1 || i==13
+        
+        if i==N+1
             continue;
         end
         figure(2*(i+1)+1);
-        h(1) = subplot(8,1,1:5) / ppcm;
+        ax1 = subplot(8,1,1:5);
         hold on
         lap.spike.idx = (cluster.t >=left(i) & cluster.t <=right(i+1));
         lap.spike.t = cluster.t(lap.spike.idx);
         lap.spike.x = cluster.x(lap.spike.idx);
         lap.spike.y = cluster.y(lap.spike.idx);
-
+        
         lap.pos.idx = ((posi.t > t1i) & (posi.t < t1f)) | ((posi.t > t2i) & (posi.t < t2f)); % pos when neural recording is on
         lap.pos.idx = posi.t >=left(i) & posi.t <=right(i+1); %lap
         lap.pos.t = posi.t(lap.pos.idx);
         lap.pos.x = posi.x(lap.pos.idx);
         lap.pos.y = posi.y(lap.pos.idx);
         
-        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'*','MarkerEdgeColor',color, 'MarkerFaceColor', color);
+        h_img = plot(lap.spike.x * ppcm, lap.spike.y * ppcm,'o','MarkerEdgeColor','black', 'MarkerFaceColor', color);
         title([cluster.name '_l' num2str(2*i)], 'Interpreter', 'none');
         
         % histogram
         hist.posi = histcounts(lap.pos.x,hist.edges) * dt; % seconds in each bin
-        h(2) = subplot(8,1,6);
+        ax2 = subplot(8,1,6);
         histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
         ylabel('Occupancy (sec)')
         xlim([hist.edges(1) hist.edges(end)])
-        zoom xon
         
-        h(3) = subplot(8,1,7);
+        ax3 = subplot(8,1,7);
         hist.cluster = histcounts(lap.spike.x,hist.edges); % spikes in each bin
         histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
         ylabel('Number of spikes')
-        xlim([hist.edges(1) hist.edges(end)])
-        zoom xon
         
-        h(4) = subplot(8,1,8);
+        ax4 = subplot(8,1,8);
         hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
         ratemap = histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges);
         
         ylabel('Rate Map (Hz)')
         xlabel('Horizontal position (cm)')
-        xlim([hist.edges(1) hist.edges(end)])
-        zoom xon
         
         set(gcf, 'Position', [100 100 1536 1175]);
-        linkaxes(h,'x')
+        linkaxes([ax2 ax3 ax4],'x')
+        xlim([hist.edges(1) hist.edges(end)])
         
         saveas(gcf,[exp_directory filesep 'Analysis' filesep cluster.name '-lap_' num2str(2*i) '.jpg'])
         set(h_img,'Visible','off')
     end
 end
+
+%% CSC
+for i = 1:N
+    figure(100+i)
+    csc_filename= fullfile(exp_directory,'Neuralynx','CSC4.ncs');
+    timerange = [left(i) right(i+1)];
+    addpath('../jumping');
+    [timecsc,lfp] = readcsc(csc_filename, timerange * 1e6); % microseconds
+    theta = filtertheta(timecsc,lfp, 5, 12);
     
+    ax1 = subplot(5,1,1);
+    lap.pos.idx = pos.t >=left(i) & pos.t <=right(i+1); %lap
+    lap.pos.t = pos.t(lap.pos.idx);
+    lap.pos.x = pos.x(lap.pos.idx);
+    plot(lap.pos.t,lap.pos.x);
+    ylabel('Horizontal position (cm)')
+    title(['lap ' num2str(2*i)]);
+    
+    ax2 = subplot(5,1,2);
+    lap.pos.s = pos.s(lap.pos.idx);
+    plot(lap.pos.t,lap.pos.s);
+    ylabel('Speed (cm/s)')
+    
+    ax3 = subplot(5,1,3);
+    plot(timecsc,lfp * 1e3);
+    ylim([-1 1])
+    ylabel('LFP (\muV)')
+    
+    ax4 = subplot(5,1,4);
+    plot(timecsc,theta *1e3,'r');
+    ylim([-0.5 0.5])
+    ylabel('Theta (\muV)')
+    
+    ax5 = subplot(5,1,5);
+    hold off; hold on
+    % loooking at all the clusters in the whole experiment (maze 3 is the whole recorded experiment)
+    for j=1:length(spike([spike.m]==3))
+        
+        cluster = spike([spike.no] == j);
+        color = colors{mod(j,length(colors))+1};
+        
+        lap.spike.idx = cluster.t >=left(i) & cluster.t <=right(i+1); % lap
+        lap.spike.t = cluster.t(lap.spike.idx);
+        lap.spike.no = j * ones(size(lap.spike.t));
+        
+        plot(lap.spike.t, lap.spike.no,'o','MarkerEdgeColor','black', 'MarkerFaceColor', color);
+    end
+    xlabel('Time (sec)')
+    ylim([0 length(spike([spike.m]==3))+1])
+    ylabel('Cluster Number')
+    
+    linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
+    xlim(timerange);
+    
+    set(gcf, 'Position', [100 100 1536 1175]);
+    saveas(gcf,[exp_directory filesep 'Analysis' filesep 'CSC-lap_' num2str(2*i) '.jpg'])
+    saveas(gcf,[exp_directory filesep 'Analysis' filesep 'CSC-lap_' num2str(2*i) '.fig'])
+
+end

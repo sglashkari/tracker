@@ -34,7 +34,7 @@ camera_image_height = max(y);
 % calculating offset by software sychronization between ROS and Neuralynx
 event_file_name = fullfile(Nlx_directory,'Events.nev');
 % [T5, T6] = soft_sync_cam_nlx(event_file_name);
-addpath('../jumping') ;
+addpath('../jumping');
 [Time,Data,Header,EventIDs,TTLs] = readevent(event_file_name)
 
 T5 = Time(TTLs == 5) %1.603641571020295e+09; %29.056608915328979* 1e6;

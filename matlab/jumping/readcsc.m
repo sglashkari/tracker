@@ -1,9 +1,10 @@
 function [Time,Data,Header] = readcsc(Filename, TimeRange)
 if nargin == 0
-     Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-     Filename = fullfile(Nlx_directory,'CSC2.ncs');
+     exp_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04';
+     exp_directory = 'home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+     Filename = fullfile(exp_directory, 'Neuralynx', 'CSC4.ncs')
 end
-FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples,Samples
+FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples, Samples
 HeaderExtractionFlag = 1;
 
 if nargin < 2
@@ -20,7 +21,7 @@ if ispc
         Samples, Header] = Nlx2MatCSC(Filename, FieldSelectionFlags,...
         HeaderExtractionFlag, ExtractionMode, ExtractionModeVector);
 else
-    addpath('../../pkgs/Nlx2Mat_relDec15/binaries'); % Neuralynx packages for Linux/Mac packages
+    addpath('../../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
     [Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples,...
         Samples, Header] = Nlx2MatCSC_v3(Filename, FieldSelectionFlags,...
         HeaderExtractionFlag, ExtractionMode, ExtractionModeVector);
