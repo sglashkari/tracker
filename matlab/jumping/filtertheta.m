@@ -12,10 +12,10 @@ end
 Ts = mean(diff(t));
 SamplingFrequency = 1/Ts;
 if nargin < 3
-    wcl = 5 % lower cutoff frequency of 5 Hz
+    wcl = 5; % lower cutoff frequency of 5 Hz
 end
 if nargin < 4
-    wch = 12 % higher cutoff frequency of 12 Hz
+    wch = 12; % higher cutoff frequency of 12 Hz
 end
 
 wn = [wcl wch]/(SamplingFrequency/2);
