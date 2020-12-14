@@ -39,11 +39,13 @@ frame = [Samples.frame]';
 time = [Samples.time]'; % seconds (wrapped)
 t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
 
-% If a few outputs are requested discard the ones that are not been correctly tracked
-if nargout <= 3 
+% If flag is not requested discard the data that are not been correctly tracked
+if nargout < 6 
     x = x (flag == 1);
     y = y (flag == 1);
     t = t (flag == 1);
+    p = p (flag == 1, :);
+    frame = frame (flag == 1);
 end
 
 % If no output only plot the results:

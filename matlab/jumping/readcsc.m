@@ -2,6 +2,7 @@ function [Time,Data,Header] = readcsc(Filename, TimeRange)
 if nargin == 0
      exp_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04';
      exp_directory = 'home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+     exp_directory = '~/Desktop/20-12-09';
      Filename = fullfile(exp_directory, 'Neuralynx', 'CSC4.ncs')
 end
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples, Samples
