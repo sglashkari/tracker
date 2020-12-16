@@ -87,9 +87,9 @@ int main(int argc, char** argv)
     string data_filename = directory + "tracking.dat";
     data_file.open (data_filename, ios::out | ios::binary);
 
-    int col = 1600, row = 580;
+    //int col = 1600, row = 580;
     //int col = 1536, row = 740;
-    //int col = 1440, row = 708;
+    int col = 1440, row = 708;
     char pixels[row*col];
     ifstream rawimagefile;
 
@@ -177,10 +177,13 @@ int main(int argc, char** argv)
 
         //crop image to the region of interest (ROI)
         if (flag == 1){
-            x1 = (x>30) ? x-30 : 0;
-            y1 = (y>30) ? y-30 : 0; 
-            x2 = (x+30> col) ? col-x1 : 60; 
-            y2 = (y+30> row) ? row-y1 : 60;
+            x = round(x);
+            y = round(y);
+            int d = 30;
+            x1 = (x>d) ? x-d : 0;
+            y1 = (y>d) ? y-d : 0; 
+            x2 = (x+d> col) ? d+col-x1 : 2*d; 
+            y2 = (y+d> row) ? d+row-y1 : 2*d;
 
             Rect roi(x1, y1, x2, y2);
             image_cropped = image(roi);
