@@ -46,10 +46,10 @@ _deps
 
 
 # 
-	*/blob/blob
-	*/display/DisplayImage
-	*/readimage/readimage
-	*/readvideo/readvideo
-	*/track/trackled
-	*/trackrat/trackrat
-	*/writedata/writedata
+*blob/blob
+*display/DisplayImage
+*readimage/readimage
+*readvideo/readvideo
+*track/trackled
+*trackrat/trackrat
+*writedata/writedata
