@@ -43,3 +43,13 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+
+# 
+	*/blob/blob
+	*/display/DisplayImage
+	*/readimage/readimage
+	*/readvideo/readvideo
+	*/track/trackled
+	*/trackrat/trackrat
+	*/writedata/writedata
