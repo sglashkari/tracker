@@ -49,24 +49,25 @@ pos.p = p;
 pos.frame = frame;
         
 %% spike data
-spike(N).name ='';
+cluster(N).name ='';
 for index = 1:N
-    spike(index).name = ['tt' num2str(tt_no(index)) '_m' num2str(maze_no(index)) '_c' num2str(cluster_no(index))];
-    spike(index).tt = tt_no(index); % [spike.tt] == 7
-    spike(index).m = maze_no(index); % [spike([spike.m] == 1).no]
-    spike(index).cl = cluster_no(index);
-    spike(index).no = index;
-    spike(index).ti = str2double(A{index}.textdata{12})*1e-6; % sec
-    spike(index).tf = str2double(A{index}.textdata{13})*1e-6; % esc
-    spike(index).t = (A{index}.data(:,18))*1e-6; % sec 
+    cluster(index).name = ['tt' num2str(tt_no(index)) '_m' num2str(maze_no(index)) '_c' num2str(cluster_no(index))];
+    cluster(index).tt = tt_no(index); % [spike.tt] == 7
+    cluster(index).m = maze_no(index); % [cluster([spike.m] == 1).no]
+    cluster(index).cl = cluster_no(index);
+    cluster(index).no = index;
+    cluster(index).ti = str2double(A{index}.textdata{12})*1e-6; % sec
+    cluster(index).tf = str2double(A{index}.textdata{13})*1e-6; % esc
+    cluster(index).t = (A{index}.data(:,18))*1e-6; % sec 
     % interpolation for position
-    spike(index).x = interp1(pos.t, pos.x, spike(index).t);
-    spike(index).y = interp1(pos.t, pos.y, spike(index).t);
+    cluster(index).x = interp1(pos.t, pos.x, cluster(index).t);
+    cluster(index).y = interp1(pos.t, pos.y, cluster(index).t);
     % interpolation for velocity
-    spike(index).vx = interp1(pos.t, pos.vx, spike(index).t);
-    spike(index).vy = interp1(pos.t, pos.vy, spike(index).t);
-    spike(index).s = vecnorm([spike(index).vx spike(index).vy]')';
+    cluster(index).vx = interp1(pos.t, pos.vx, cluster(index).t);
+    cluster(index).vy = interp1(pos.t, pos.vy, cluster(index).t);
+    cluster(index).s = vecnorm([cluster(index).vx cluster(index).vy]')';
 end
 
-save(mat_filename,'pos','spike','ppcm', 'offset');
+spike = cluster;
+save(mat_filename,'pos','cluster','spike','ppcm', 'offset');
 disp(['File ' mat_filename ' has been created!'])

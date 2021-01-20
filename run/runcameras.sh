@@ -1,22 +1,22 @@
 #!/bin/bash
 
 used_webcams=$(fuser /dev/video0 | wc -w);
-if [ $used_webcams -gt 0 ]
+if [ "$used_webcams" -gt 0 ]
 then
-	echo $used_webcams 'webcam(s) is currently not available!'
+	echo "$used_webcams webcam(s) is currently not available!"
 	exit
 fi
 
-dt=$(date +%Y-%m-%d_%H-%M-%S);
-echo $dt
+dt="$(date +%Y-%m-%d_%H-%M-%S)";
+echo "$dt"
 
-mkdir ~/Videos/$dt;
+mkdir "$HOME/Videos/$dt";
 
-gnome-terminal -- bash -c "cd ~/Videos/${dt}; ~/flycapture/bin/FlyCapture2Test"
+gnome-terminal -- bash -c "cd $HOME/Videos/${dt}; $HOME/flycapture/bin/FlyCapture2Test"
 
 # Top webcam
 top_cam_available=$(ls /dev/video* | grep video0 | wc -l);
-if [ $top_cam_available -eq 1 ]; then
+if [ "$top_cam_available" -eq 1 ]; then
 	# settings
 	v4l2-ctl \
 	--device=0 \
@@ -43,7 +43,7 @@ fi
 
 # Side webcam
 side_cam_available=$(ls /dev/video* | grep video2 | wc -l);
-if [ $side_cam_available -eq 1 ]; then
+if [ "$side_cam_available" -eq 1 ]; then
 
 	# settings
 	v4l2-ctl \

@@ -55,10 +55,11 @@ if nargout == 0
     plot(x,y,'.');
     axis equal
     figure(2)
-    subplot(2,1,1)
+    ax1 = subplot(2,1,1);
     plot(t, x,'.');
-    subplot(2,1,2)
+    ax2 = subplot(2,1,2);
     plot(t, y,'.');
+    linkaxes([ax1 ax2],'x');
     clear t
 else
         

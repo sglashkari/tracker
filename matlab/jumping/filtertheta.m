@@ -1,12 +1,9 @@
-function theta = filtertheta(t, lfp, wcl, wch)
+function [theta, phase]= filtertheta(t, lfp, wcl, wch)
 % FILTERTHETA filters out theta from the raw LFP signal
 % filtertheta(time, signal, lower cutoff frequency, higher cutoff frequency)
 
 if nargin < 2
-    Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-    FilenameCSC = fullfile(Nlx_directory,'CSC14.ncs');
-    TimeRange = [5.827191990166666   5.852658656833333]*1e3;
-    [t, lfp] = readcsc(FilenameCSC, TimeRange * 1e6); % microseconds
+    [t, lfp] = readcsc;
 end
 
 Ts = mean(diff(t));
@@ -21,7 +18,7 @@ end
 wn = [wcl wch]/(SamplingFrequency/2);
 order = 2;
 
-[b,a]=butter(order, wn);
+[b,a] = butter(order, wn);
 theta = filtfilt(b,a,lfp);
 
 if nargout == 0
@@ -30,7 +27,10 @@ if nargout == 0
     hold on
     plot(t, theta,'r');
     clear theta;
-end
+elseif nargout > 1
+    z = hilbert(theta);
+    phase = angle(-z); % negative because trough is zero
+    phase = rad2deg(phase);
+end    
     
 end
-

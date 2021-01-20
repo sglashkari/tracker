@@ -2,6 +2,7 @@
  * OpenCV SimpleBlobDetector Example
  *
  * Copyright 2015 by Satya Mallick <spmallick@gmail.com>
+ * Modified by Shahin Lashkari
  *
  */
 
@@ -33,7 +34,7 @@ int main( int argc, char** argv )
 
 	// Filter by Convexity
 	params.filterByConvexity = false; //true
-	//params.minConvexity = 0.87;
+	params.minConvexity = 0.87;
 
 	// Filter by Inertia
 	params.filterByInertia = true;

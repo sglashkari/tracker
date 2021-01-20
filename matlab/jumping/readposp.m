@@ -7,7 +7,8 @@ function [Time,X,Y, Dir, Header] = readposp(Filename, StartTime, EndTime)
 
 if nargin == 0
     Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-    Filename = fullfile(Nlx_directory,'pos.p');
+    Nlx_directory = '/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-10-25_Rat913-01/Neuralynx';
+    Filename = fullfile(Nlx_directory,'Pos.p');
 end
 if nargin < 3
     TimeEV = readevent(fullfile(Nlx_directory,'Events.nev'));

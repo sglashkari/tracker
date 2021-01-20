@@ -179,11 +179,11 @@ int main(int argc, char** argv)
         if (flag == 1){
             x = round(x);
             y = round(y);
-            int d = 30;
+            int d = 20;
             x1 = (x>d) ? x-d : 0;
             y1 = (y>d) ? y-d : 0; 
-            x2 = (x+d> col) ? d+col-x1 : 2*d; 
-            y2 = (y+d> row) ? d+row-y1 : 2*d;
+            x2 = (x+d> col) ? col-x1 : 2*d; 
+            y2 = (y+d> row) ? row-y1 : 2*d;
 
             Rect roi(x1, y1, x2, y2);
             image_cropped = image(roi);

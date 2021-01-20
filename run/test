@@ -1,0 +1,4 @@
+#!/bin/bash
+for file in "/dev/video*"; do
+	echo "$file"
+done
