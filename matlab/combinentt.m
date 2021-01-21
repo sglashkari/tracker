@@ -1,14 +1,15 @@
-function combinentt(Filenames)
+%function combinentt(Filenames)
 %%% combine multiple ntt files into a single ntt file.
 % Example:
 %       Filenames = {'/home/shahin/test/matlab/TT6_0000.ntt', '/home/shahin/test/matlab/TT6_0001.ntt'}
-% 
+%
+% This works only for Mac/Linux at the moment
 % Shahin 2021-01-20
 %
-if nargin == 0
+%if nargin == 0
     [file,path] = uigetfile('*.ntt', 'Select Two or More NTT Files', 'MultiSelect', 'on');
     Filenames = fullfile(path,file);
-end
+%end
 %   INPUT ARGUMENTS:
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, Spike Channel Numbers, Cell Numbers, Spike Features, Samples
 HeaderExtractionFlag = 1; % header import is desired
@@ -32,10 +33,12 @@ ExtractionModeVector = []; % Extract All (The vector value is ignored)
 
 Timestamps = [];
 
+addpath('../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
+
 for i = 1:length(Filenames)
     Filename = Filenames{i};
     [Timestamps1, ScNumbers1, CellNumbers1, Features1, Samples1, Header1] = ...
-        Nlx2MatSpike( Filename, FieldSelectionFlags, ...
+        Nlx2MatSpike_v3( Filename, FieldSelectionFlags, ...
         HeaderExtractionFlag, ExtractMode, ExtractionModeVector);
     
     if i == 1
@@ -46,10 +49,10 @@ for i = 1:length(Filenames)
         Samples = Samples1;
         Header = Header1;
     else
-        Timestamps = [Timestamps; Timestamps1];
-        ScNumbers = [ScNumbers;ScNumbers1];
-        CellNumbers = [CellNumbers;CellNumbers1];
-        Features = [Features;Features1];
+        Timestamps = [Timestamps  Timestamps1];
+        ScNumbers = [ScNumbers ScNumbers1];
+        CellNumbers = [CellNumbers CellNumbers1];
+        Features = [Features Features1];
         Samples = cat(3,Samples,Samples1);
     end
 end
@@ -59,8 +62,9 @@ AppendToFileFlag = 0; % Delete file if exists
 ExportMode = 1; % Export All
 ExportModeVector = []; % (Extract All): The vector value is ignored.
 
-Mat2NlxSpike( Filename, AppendToFileFlag, ExportMode, ExportModeVector, ...
+Mat2NlxTT( Filename, AppendToFileFlag, ExportMode, ExportModeVector, ...
     FieldSelectionFlags, Timestamps, ScNumbers, CellNumbers, ...
     Features, Samples, Header);
 
-end
+
+%end
