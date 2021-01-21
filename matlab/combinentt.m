@@ -1,4 +1,4 @@
-%function combinentt(Filenames)
+function combinentt(Filenames)
 %%% combine multiple ntt files into a single ntt file.
 % Example:
 %       Filenames = {'/home/shahin/test/matlab/TT6_0000.ntt', '/home/shahin/test/matlab/TT6_0001.ntt'}
@@ -6,10 +6,10 @@
 % This works only for Mac/Linux at the moment
 % Shahin 2021-01-20
 %
-%if nargin == 0
+if nargin == 0
     [file,path] = uigetfile('*.ntt', 'Select Two or More NTT Files', 'MultiSelect', 'on');
     Filenames = fullfile(path,file);
-%end
+end
 %   INPUT ARGUMENTS:
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, Spike Channel Numbers, Cell Numbers, Spike Features, Samples
 HeaderExtractionFlag = 1; % header import is desired
@@ -31,10 +31,12 @@ ExtractionModeVector = []; % Extract All (The vector value is ignored)
 %   Header: A Mx1 string vector of all the text from the Neuralynx file header, where
 %           M is the number of lines of text in the header.
 
-Timestamps = [];
 
 addpath('../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
 
+if path == 0
+    return;
+end
 for i = 1:length(Filenames)
     Filename = Filenames{i};
     [Timestamps1, ScNumbers1, CellNumbers1, Features1, Samples1, Header1] = ...
@@ -67,4 +69,4 @@ Mat2NlxTT( Filename, AppendToFileFlag, ExportMode, ExportModeVector, ...
     Features, Samples, Header);
 
 
-%end
+end

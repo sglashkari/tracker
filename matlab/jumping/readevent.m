@@ -1,6 +1,7 @@
 function [Time,Data,Header,EventIDs,TTLs] = readevent(Filename)
 if nargin == 0
     Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
+    Nlx_directory = '/Users/shahin/Desktop/test_latency';
     Filename = fullfile(Nlx_directory,'Events.nev');
 end
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, Event IDs, TTLs, Extras, Event Strings
@@ -41,7 +42,7 @@ Time = Timestamps;%(EventIDs==4); % micrseconds
 Time = (Time * 1e-6)'; %seconds
 
 if nargout == 0
-    Data
+    clear Time;
 end
 
 end
