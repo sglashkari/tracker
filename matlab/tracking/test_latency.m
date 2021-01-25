@@ -1,5 +1,5 @@
 %%% Testing open arena latency
-% between software PTP and LED
+% between software PTP (2019) and LED (2021)
 % Shahin 2021-01-21
 clear
 clc; close all
@@ -63,10 +63,18 @@ else
     HeaderExtractionFlag = 1;
     ExtractionMode = 1;
     ExtractionModeVector = [];
-    addpath('../../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
     
-    [Timestamps, EventIDs, TTLs, Extras, EventStrings, Header] = Nlx2MatEV_v3( event_filename,...
-        FieldSelectionFlags, HeaderExtractionFlag, ExtractionMode, ExtractionModeVector );
+    if ispc
+        addpath('../../pkgs/MatlabImportExport_v6.0.0'); % Neuralynx packages for Windows
+        [Timestamps, EventIDs, TTLs, Extras, EventStrings, Header] = ...
+            Nlx2MatEV( Filename, FieldSelectionFlags, HeaderExtractionFlag, ...
+            ExtractionMode, ExtractionModeVector );
+    else
+        addpath('../../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
+        [Timestamps, EventIDs, TTLs, Extras, EventStrings, Header] = ...
+            Nlx2MatEV_v3( Filename, FieldSelectionFlags, HeaderExtractionFlag, ...
+            ExtractionMode, ExtractionModeVector );
+    end
     
     T1 = str2double(string(EventStrings(TTLs==1 & EventIDs==11)));
     T2 = Timestamps(TTLs==2 & EventIDs==11)';
@@ -96,7 +104,7 @@ mean(T1-T2) * 1e-6;
 mean(T4-T3) * 1e-6;
 
 t_camera = datetime(t_camera(1),'ConvertFrom','posixtime',...
-'TimeZone','America/New_York')
+    'TimeZone','America/New_York')
 
 t_nlx = datetime(t_nlx(1),'ConvertFrom','posixtime',...
-'TimeZone','America/New_York')
+    'TimeZone','America/New_York')

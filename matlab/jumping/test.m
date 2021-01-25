@@ -68,7 +68,7 @@ exp_directory = '~/Desktop/20-12-09';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'spike','ppcm', 'offset', 'colors','xmax','x_thresh');
 %%
-j = cluster_no;
+j = 1; % cluster_no;
 
 f = figure(1000);
 clf(f);
