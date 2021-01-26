@@ -3,7 +3,7 @@
 % sequential firing of multiple spikes before jumping
 % SGL 2020-11-28
 clc; close all;
-exp_directory = '~/Desktop/20-12-09';
+exp_directory = '/home/shahin/Desktop/20-12-09';
 [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
 if isequal(datafile, 0)
     error('Data file was not selected!')
@@ -11,10 +11,16 @@ end
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename, 'pos', 'spike', 'ppcm', 'offset')
 clearvars -except datafile exp_directory pos spike ppcm offset;
+
+[img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','*.pgm'), 'Select Image File');
+if isequal(img_file, 0)
+    error('Image file was not selected!')
+end
+img_filename = fullfile(img_directory, img_file);
+
 colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
 colors = repmat(colors', ceil(length(spike)/length(colors))); % repeat the colors to match the total number of spikes
-[img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','*.pgm'), 'Select Image File');
-img_filename = fullfile(img_directory, img_file);
+
 I = imread(img_filename);
 xmax = ceil(size(I,2)/ppcm);
 

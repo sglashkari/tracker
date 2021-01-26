@@ -1,4 +1,4 @@
-function [theta, phase]= filtertheta(t, lfp, wcl, wch)
+function [theta, phase, mag]= filtertheta(t, lfp, wcl, wch)
 % FILTERTHETA filters out theta from the raw LFP signal
 % filtertheta(time, signal, lower cutoff frequency, higher cutoff frequency)
 
@@ -29,8 +29,9 @@ if nargout == 0
     clear theta;
 elseif nargout > 1
     z = hilbert(theta);
-    phase = angle(-z); % negative because trough is zero
+    phase = angle(z);
     phase = rad2deg(phase);
+    mag = abs(z);
 end    
     
 end

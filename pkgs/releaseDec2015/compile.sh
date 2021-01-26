@@ -9,7 +9,7 @@
 #
 
 #== Should it compile for 32 or 64 bit matlab and which platform
-PLATFORM="64PC"     #should be 32PC, 64PC, 32MAC or 64MAC
+PLATFORM="64MAC"     #should be 32PC, 64PC, 32MAC or 64MAC
 
 #== paths to matlab
 #defaults for MAC

@@ -1,8 +1,12 @@
 function [Time,Data,Header] = readtt(Filename, ExtractionModeVector)
 if nargin == 0
-     Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-     Filename = fullfile(Nlx_directory,'TT2',"TT2.ntt");
- end
+    if ispc
+        Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
+    else
+        Nlx_directory = '/home/shahin/Desktop/20-12-09/Neuralynx';
+    end
+    Filename = fullfile(Nlx_directory,'TT4',"TT4.ntt");
+end
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, Spike Channel Numbers, Cell Numbers, Spike Features, Samples
 HeaderExtractionFlag = 1;
 
@@ -49,5 +53,5 @@ if nargout == 0
     plot((0:31)/SamplingFrequency,Data(:,:,randi(N)));
     xlim([0 31/SamplingFrequency])
 end
-    
+
 end
