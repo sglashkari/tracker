@@ -3,9 +3,12 @@ function combinentt(Filenames)
 % Example:
 %       Filenames = {'/home/shahin/test/matlab/TT6_0000.ntt', '/home/shahin/test/matlab/TT6_0001.ntt'}
 %
-% This works only for Mac/Linux at the moment
+% This code only works for Mac/Linux at the moment
 % Shahin 2021-01-20
 %
+if ispc
+    error('Sorry! This code only works for Mac/Linux at the moment.');
+end
 if nargin == 0
     [file,path] = uigetfile('*.ntt', 'Select Two or More NTT Files', 'MultiSelect', 'on');
     Filenames = fullfile(path,file);
@@ -50,6 +53,7 @@ for i = 1:length(Filenames)
         Features = Features1;
         Samples = Samples1;
         Header = Header1;
+        movefile(Filename,[extractBefore(Filename,'.ntt') '_0000.ntt']);
     else
         Timestamps = [Timestamps  Timestamps1];
         ScNumbers = [ScNumbers ScNumbers1];
@@ -59,14 +63,15 @@ for i = 1:length(Filenames)
     end
 end
 
-Filename = strcat(extractBefore(Filename,'.ntt'), '_combined.ntt');
+Filename = [extractBefore(Filename,'_00') '.ntt'];
 AppendToFileFlag = 0; % Delete file if exists
 ExportMode = 1; % Export All
-ExportModeVector = []; % (Extract All): The vector value is ignored.
+ExportModeVector = 1; % (Extract All): The vector value is ignored.
+NumRecs = length(Timestamps); % Number of records in arrays
+FieldSelectionFlags = [1 1 1 1 1 1]; % Timestamps, Spike Channel Numbers, Cell Numbers, Features, Samples, Header
 
-Mat2NlxTT( Filename, AppendToFileFlag, ExportMode, ExportModeVector, ...
+Mat2NlxTT( Filename, AppendToFileFlag, ExportMode, ExportModeVector, NumRecs, ...
     FieldSelectionFlags, Timestamps, ScNumbers, CellNumbers, ...
     Features, Samples, Header);
-
 
 end
