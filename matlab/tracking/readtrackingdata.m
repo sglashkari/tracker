@@ -9,7 +9,7 @@ function [t, x, y, p, frame, flag] = readtrackingdata(exp_directory)
 % SGL 2020-12-01
 
 if nargin == 0
-    exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+    exp_directory = '/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
     exp_directory = uigetdir(exp_directory,'Select Experiment Folder');
     if exp_directory == 0
         return;

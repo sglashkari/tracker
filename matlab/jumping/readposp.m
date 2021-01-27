@@ -6,14 +6,20 @@ function [Time,X,Y, Dir, Header] = readposp(Filename, StartTime, EndTime)
 % sgl 2020-08-30
 
 if nargin == 0
-    Nlx_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04\Neuralynx';
-    Nlx_directory = '/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-10-25_Rat913-01/Neuralynx';
-    Filename = fullfile(Nlx_directory,'Pos.p');
+    Nlx_directory = '/home/shahin/Downloads/Day3/';
+    [posp,Nlx_directory] = uigetfile(fullfile(Nlx_directory,'Pos.p'), 'Select Pos.p File');
+    if isequal(posp, 0)
+        error('Pos.p file was not selected!')
+    end
+    Filename = fullfile(Nlx_directory, posp);
 end
 if nargin < 3
-    TimeEV = readevent(fullfile(Nlx_directory,'Events.nev'));
-    StartTime = TimeEV(1:2:end);
-    EndTime = TimeEV(2:2:end);
+    [Time,Data,Header,EventIDs,TTLs] = readevent(fullfile(Nlx_directory,'Events.nev'));
+    
+    % for Day 3 rat 913
+    idx = EventIDs==4;
+    StartTime = Time(idx);
+    EndTime = Time(find(idx)+1);
 end
 FileID = fopen(Filename,'r');
 Header = arrayfun(@(~) fgetl(FileID), 1:24, 'UniformOutput', false)';

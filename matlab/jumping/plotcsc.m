@@ -5,7 +5,7 @@ exp_directory = '/home/shahin/Desktop/20-12-09';
 addpath('../jumping');
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'lap');
-l = 2;
+l = 9;
 cscs = 2:16;
 for c=cscs
     
