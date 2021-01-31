@@ -57,7 +57,7 @@ DT1 = T6-T5
 DT2 = light_off_cam-light_on_cam
 offset = (offset_1 + offset_2)/2
 
-
+save(fullfile(exp_directory,'offset.mat'), 'offset');
 %% Calculations
 ts = (t + offset) * 1e6; % in microseconds
 

@@ -27,7 +27,10 @@ A = cellfun(@(x) importdata(x,',',13), absolue_paths, 'UniformOutput', false);
 addpath('../tracking');
 [t, x, y, p, frame] = readtrackingdata(exp_directory);
 offset = 48.5827 - 0.2; %%%% ONLY for DAY 2 !! %%%%%% after modification
-   
+
+offset_filename = fullfile(exp_directory,'offset.mat');
+load(offset_filename, 'offset')
+
 % velocity
 % 2020-03 5 ft = 1524 mm = 480 pixels (each pixel = 3.175 mm)
 % 2020-10 3 ft = 914 mm = 840 pixels = norm([296 372]-[1136 348],2) 
@@ -43,6 +46,7 @@ pos.vx = gradient(pos.x)./gradient(pos.t); % Vx in cm/sec
 pos.vy = gradient(pos.y)./gradient(pos.t); % Vy in cm/sec
 pos.s = vecnorm([pos.vx pos.vy]')'; % speed in cm/sec
 %pos.hd = atan2d(pos.vy,pos.vx); % estimation of hd based
+pos.ax = gradient(pos.vx)./gradient(pos.t); % ax in cm/sec
 
 % IO port status p and frame number
 pos.p = p;

@@ -9,7 +9,7 @@ clc; close all
 % %a new folder will be created % tmp
 Nlx_directory = '/home/shahin/Downloads/Day3/';
 % Nlx_directory = 'C:\Users\dome3neuralynx\Desktop\Day4 - Copy' %tmp
-% exp_directory = Nlx_directory; %tmp
+exp_directory = Nlx_directory; %tmp
 pixels_width = 640;
 pixels_height = 480;
 frame_rate = 30; % fps
@@ -66,7 +66,7 @@ DT1 = T6-T5
 DT2 = light_off_cam-light_on_cam
 offset = (offset_1 + offset_2)/2
 
-
+save(fullfile(exp_directory,'offset.mat'), 'offset');
 %% Calculations
 ts = (t + offset) * 1e6; % in microseconds
 
