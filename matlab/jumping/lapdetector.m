@@ -4,16 +4,15 @@ function lap = lapdetector(exp_directory, tai, taf)
 %
 %  Inputs:
 %       Experiment Directory
-%       Time Analysis Initial
-%       Tiem Analysis Final
+%       Time Analysis (Initial)
+%       Tiem Analysis (Final)
 %
 % SGL 2020-11-28
 %
 clc; close all
 
 if nargin == 0
-    exp_directory = '/home/shahin/Desktop/20-12-09';
-    %exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
+    exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
     [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
     if isequal(datafile, 0)
         error('Data file was not selected!')
@@ -35,12 +34,14 @@ colors = repmat(colors', ceil(length(spike)/length(colors))); % repeat the color
 I = imread(img_filename);
 xmax = ceil(size(I,2)/ppcm);
 
-%% Plotting the position vs time and marking neural recording times,
-% maze times and lap detection times
+%%% Plotting the position vs time and marking neural recording times,
+
+%% time detection: recording, maze, and analysis
 
 event_filename = fullfile(exp_directory, 'Neuralynx', 'Events.nev');
-[Time,Data,Header,EventIDs,TTLs] = readevent(event_filename)
+[Time,Data,Header,EventIDs,TTLs] = readevent(event_filename);
 
+% time of recording
 tri = Time(string(Data)=='Starting Recording'); % time of recording (initial)
 trf = Time(string(Data)=='Stopping Recording'); % time of recording (final)
 
@@ -49,35 +50,34 @@ for i=1:length(tri)
     rectangle('Position',[tri(i),0,trf(i)-tri(i),xmax],'FaceColor','y')
 end
 
-% maze times
+% time of maze
 mi = Data(contains(string(Data),"start",'IgnoreCase',true) & (EventIDs==4)');
-if length(mi)~=0 % when mazes have start and stop
+if ~isempty(mi) % when mazes have start and stop
     tmi = Time(contains(string(Data),"start",'IgnoreCase',true) & (EventIDs==4)'); % time of maze initial
     tmf = Time(contains(string(Data),"stop",'IgnoreCase',true) & (EventIDs==4)'); % time of maze final
     mf = Data(contains(string(Data),"stop",'IgnoreCase',true) & (EventIDs==4)');
 else % when mazes don't have start and stop
     tmi = Time(EventIDs==4); % time of maze initial
-    mi = Data(EventIDs==4)
-    tmf = Time(find(EventIDs==4) + 1) % time of maze final
-    mf = Data(find(EventIDs==4) + 1)
+    mi = Data(EventIDs==4);
+    tmf = Time(find(EventIDs==4) + 1); % time of maze final
+    mf = Data(find(EventIDs==4) + 1);
 end
 
 for i=1:length(tmi)
     rectangle('Position',[tmi(i),0,tmf(i)-tmi(i),xmax],'FaceColor',[0 .8 .8])
 end
 
-% analysis times
-if nargout < 3
+% time of analysis
+if nargin < 3
     tai = tri(1:end);
     taf = trf(1:end);
 end
 
+% extract data only during the time of analysis
 t_crop_idx = zeros(length(pos.t),1);
 for i=1:length(tai)
     t_crop_idx = t_crop_idx | ((pos.t > tai(i)) & (pos.t < taf(i)));
 end
-
-pos.ax = gradient(pos.vx)./gradient(pos.t); % ax in cm/sec
 
 t = pos.t(t_crop_idx);
 x = pos.x(t_crop_idx);
@@ -86,16 +86,16 @@ vx = pos.vx(t_crop_idx);
 vy = pos.vy(t_crop_idx);
 s = pos.s(t_crop_idx);
 frame = pos.frame(t_crop_idx);
-ax = pos.ax(t_crop_idx);
 
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
+
+%% jump detection
 
 % criterion
 criterion = abs(vx) > 200;
 plot(t,200*criterion,'-r')
 
-% jump detection
 x_thresh = 84;
 dx = x - x_thresh;
 
@@ -110,13 +110,13 @@ x_jump_rightward = x(jump_criteria_rightward);
 plot(time_jump_leftward, x_jump_leftward, 'hk', 'MarkerSize',15)
 plot(time_jump_rightward, x_jump_rightward, 'hr', 'MarkerSize',15)
 
-% lap detection
-time_jump = sort([time_jump_leftward;time_jump_rightward; tai; taf;taf(end)]); % exception handling for start of stop
+%% detecting beginning and end of laps (extremes)
+time_jump = sort([time_jump_leftward;time_jump_rightward; tai; taf;taf(end)]); % exception handling for start of stop of analysis
 l = 1;
 N = length(time_jump);
 
 for i = 1:2:N-2
-    %lap
+    %lap extremes (max and min)
     jump_idx_lap = t>=time_jump(i) & t<=time_jump(i+2);
     tl = t(jump_idx_lap);
     [x_right(l), idx] = max(x(jump_idx_lap));
@@ -127,20 +127,21 @@ for i = 1:2:N-2
     l = l+1;
 end
 
-t_right(x_right < x_thresh + 10) = [];
-x_right(x_right < x_thresh + 10) = [];
-t_left(x_left > x_thresh - 10) = [];
-x_left(x_left > x_thresh - 10) = [];
+% ignore extremes in the vicinity of the gap
+t_right(x_right < x_thresh + 15) = [];
+x_right(x_right < x_thresh + 15) = [];
+t_left(x_left > x_thresh - 15) = [];
+x_left(x_left > x_thresh - 15) = [];
 
 plot(t_right, x_right, 'pk', 'MarkerSize',15)
 plot(t_left, x_left, 'sk', 'MarkerSize',15)
 
-time_jump = sort([time_jump_leftward;time_jump_rightward]); % No exception handling
+%% lap detection
+time_jump = sort([time_jump_leftward;time_jump_rightward]); % no exception handling
 time_extreme = sort([t_right t_left]);
 N = length(time_extreme);
 l = 1;
 
-% picking the frame where the jump has happened
 for i=1:N-1
     % leftward laps
     if ismember(time_extreme(i),t_right) && ismember(time_extreme(i+1),t_left) ...
@@ -164,12 +165,9 @@ for i=1:N-1
         lap(l).frame = pos.frame(pos.t==lap(l).t_jump); % frame no of jump in the lap
         l = l+1;
     end
-    
 end
 
-set(gcf, 'Position', [100 100 2000 1500]);
-%saveas(gcf,fullfile(exp_directory, 'Analysis','overall_view.jpg'))
-
+%% plotting each lap seperately IN ALTERNATING COLORS (first one is red)
 for l=1:length(lap)
     idx = t >= lap(l).t(1) & t <= lap(l).t(2);
     if mod(l,2) == 0
@@ -181,7 +179,31 @@ for l=1:length(lap)
         color = '.r';
     end
     plot(t(idx),x(idx),color)
-    fprintf('%d,',lap(l).frame);
 end
-    
+
+set(gcf, 'Position', [100 100 2000 1500]);
+
+%% save file if the functiona in called, otherwise display the info
+if nargout ~= 0
+    analysis_directory = fullfile(exp_directory, 'Analysis');
+    if ~exist(analysis_directory, 'dir')
+       mkdir(analysis_directory)
+    end
+    saveas(gcf,fullfile(analysis_directory,'overall_view.jpg'));
+else
+    format longG
+    disp(["Time              Data"]);
+    disp([Time string(Data)]);
+    disp('Frame numbers: ')
+    for l=1:length(lap)
+        fprintf('%d,',lap(l).frame);
+    end
+    disp('\n')
+    fprintf('Maze Times: \n')
+    disp([tmi string(mi) tmf string(mf)])
+    fprintf('Analysis Times: \n')
+    disp([tai taf])
+    clear lap;
+end
+
 end
