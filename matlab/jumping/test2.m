@@ -20,22 +20,23 @@
 close all
 csc_filename= fullfile(exp_directory,'Neuralynx','CSC4.ncs');
 addpath('../jumping');
-lap_no = 12;
-cluster_no = 3;
+lap_no = 10;
+cluster_no = 6;
 
 %% Directional rate map for all the laps
-figure(200)
-openfig(fullfile(exp_directory, 'Analysis','Directional_ratemap.fig'));
+%figure(200)
+%openfig(fullfile(exp_directory, 'Analysis','Directional_ratemap.fig'));
+
 
 %% CSC
 
 % theta phase
-for j=1:length(spike([spike.m]==3))
-    spike(j).phase = nan(size(spike(j).t));
+for j=1:length(cluster([cluster.m]==3))
+    cluster(j).phase = nan(size(cluster(j).t));
 end
 for l=lap_no %1:length(lap)
     % filtering out the leftward laps
-    if lap(l).dir=="left" %strcmp(lap(l).dir,"left")
+    if lap(l).dir=="right" %strcmp(lap(l).dir,"left")
         continue;
     end
     figure(100+l)
@@ -64,25 +65,25 @@ for l=lap_no %1:length(lap)
     ylabel('Theta (\muV)')
     
     % looking at all the clusters in m3 (m3 is the whole recorded experiment)
-    for j=1:length(spike([spike.m]==3))
-        if nnz([spike(j).lap]==l) > 0 % if there a firing for cluster j in this lap
+    for j=1:length(cluster([cluster.m]==3))
+        if nnz([cluster(j).lap]==l) > 0 % if there a firing for cluster j in this lap
             ax5 = subplot(5,1,5);
             hold off; hold on
-            plot(spike(j).t([spike(j).lap]==l), spike(j).no,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
+            plot(cluster(j).t([cluster(j).lap]==l), cluster(j).no,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
             % theta phase
-            spike(j).phase([spike(j).lap]==l) = interp1(timecsc,phase, spike(j).t([spike(j).lap]==l));
-            spike(j).theta([spike(j).lap]==l) = interp1(timecsc,theta, spike(j).t([spike(j).lap]==l));
+            cluster(j).phase([cluster(j).lap]==l) = interp1(timecsc,phase, cluster(j).t([cluster(j).lap]==l));
+            cluster(j).theta([cluster(j).lap]==l) = interp1(timecsc,theta, cluster(j).t([cluster(j).lap]==l));
             if j == cluster_no
                 ax3 = subplot(5,1,3); hold on;
-                plot(spike(j).t([spike(j).lap]==l), spike(j).phase([spike(j).lap]==l),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
+                plot(cluster(j).t([cluster(j).lap]==l), cluster(j).phase([cluster(j).lap]==l),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
                 ax4 = subplot(5,1,4); hold on;
-                plot(spike(j).t([spike(j).lap]==l), spike(j).theta([spike(j).lap]==l)*1e6,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
+                plot(cluster(j).t([cluster(j).lap]==l), cluster(j).theta([cluster(j).lap]==l)*1e6,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
             end
         end
     end
     ax5 = subplot(5,1,5);
     xlabel('Time (sec)')
-    ylim([0 length(spike([spike.m]==3))+1])
+    ylim([0 length(cluster([cluster.m]==3))+1])
     ylabel('Cluster Number')
     
     linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
@@ -95,7 +96,8 @@ end
 
 %%
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
-load(mat_filename,'pos','posi', 'lap', 'spike','ppcm', 'offset', 'colors','xmax','x_thresh');
+load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax','x_thresh');
+x_thresh = 84;
 
 j = cluster_no;
 
@@ -103,10 +105,10 @@ f = figure(1000);
 clf(f);
 for l=2:2:30
     ax(round(l/2)) = subplot(15,1,round(l/2));
-    idx = [spike(j).lap]==l;
-    plot(spike(j).x(idx),spike(j).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
+    idx = [cluster(j).lap]==l;
+    plot(cluster(j).x(idx),cluster(j).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
     hold on
-    plot(spike(j).x(idx), 360 + spike(j).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
+    plot(cluster(j).x(idx), 360 + cluster(j).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
     %title(['cluster ' num2str(j) ' lap ' num2str(l)])
     ylabel('Phase (angle)')
     %xlabel('Horizontal position (cm)')
@@ -124,10 +126,10 @@ f = figure(1001);
 clf(f);
 for l=2:2:30
     ax(round(l/2)) = subplot(15,1,round(l/2));
-    idx = [spike(j).lap]==l & [spike(j).vx] <= v_thresh;
-    x_offset = (spike(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
-    X = spike(j).x(idx) + x_offset;
-    phase = spike(j).phase(idx);
+    idx = [cluster(j).lap]==l & [cluster(j).vx] <= v_thresh;
+    x_offset = (cluster(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
+    X = cluster(j).x(idx) + x_offset;
+    phase = cluster(j).phase(idx);
     plot(X,phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
     hold on
     plot(X, 360 + phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
@@ -146,11 +148,11 @@ xlim([0 xmax])
 f = figure(1002);
 clf(f);
 for l=2:2:30
-    idx = [spike(j).lap]==l;
-    x_offset = (spike(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
-    X = spike(j).x(idx) + x_offset;
-    phase = spike(j).phase(idx);
-    phase(spike(j).vx(idx) <= v_thresh) = nan;
+    idx = [cluster(j).lap]==l;
+    x_offset = (cluster(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
+    X = cluster(j).x(idx) + x_offset;
+    phase = cluster(j).phase(idx);
+    phase(cluster(j).vx(idx) <= v_thresh) = nan;
     plot(X,phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
     hold on
     plot(X, 360 + phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
@@ -166,11 +168,11 @@ f = figure(1003);
 clf(f);
 for l=16:2:30
     ax(round(l/2)-7) = subplot(8,1,round(l/2)-7);
-    idx = [spike(j).lap]==l;
-    x_offset = (spike(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
-    X = spike(j).x(idx) + x_offset;
-    phase = spike(j).phase(idx);
-    phase(spike(j).vx(idx) <= v_thresh) = nan;
+    idx = [cluster(j).lap]==l;
+    x_offset = (cluster(j).x(idx) < x_thresh) * (lap(l).gap - lap(1).gap);
+    X = cluster(j).x(idx) + x_offset;
+    phase = cluster(j).phase(idx);
+    phase(cluster(j).vx(idx) <= v_thresh) = nan;
     plot(X,phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));
     hold on
     plot(X, 360 + phase,'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(j));

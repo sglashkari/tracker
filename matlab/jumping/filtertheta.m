@@ -19,7 +19,7 @@ wn = [wcl wch]/(SamplingFrequency/2);
 order = 2;
 
 [b,a] = butter(order, wn);
-theta = filtfilt(b,a,lfp);
+theta = filtfilt(b,a,double(lfp));
 
 if nargout == 0
     close all;

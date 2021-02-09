@@ -1,141 +1,300 @@
 % This program plots the data for Rat 913
 % The data include the occupancy and histogram of the spikes and the
 % sequential firing of multiple spikes before jumping
-% SGL 2020-11-28
+% ## This program is the updated version of plothist ##
+% SGL 2021-01-31
 clc; close all;
-exp_directory = '~/Desktop/20-12-09';
+exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
 [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
 if isequal(datafile, 0)
     error('Data file was not selected!')
 end
 mat_filename = fullfile(exp_directory, datafile);
-load(mat_filename, 'pos', 'spike', 'ppcm', 'offset')
-clearvars -except datafile exp_directory pos spike ppcm offset;
-colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
-colors = repmat(colors', ceil(length(spike)/length(colors))); % repeat the colors to match the total number of spikes
+load(mat_filename, 'pos', 'cluster', 'ppcm', 'offset')
+clearvars -except datafile exp_directory pos cluster ppcm offset;
+
 [img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','*.pgm'), 'Select Image File');
+if isequal(img_file, 0)
+    error('Image file was not selected!')
+end
 img_filename = fullfile(img_directory, img_file);
-I = imread(img_filename);
-xmax = ceil(size(I,2)/ppcm);
-spike = spike([spike.m]==3); % only looking at the clusters in m3 (m3 is the whole recorded experiment)
 
-%% Plotting the position vs time and marking neural recording times, 
+colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
+colors = repmat(colors', ceil(length(cluster)/length(colors))); % repeat the colors to match the total number of clusters
+colors(35) = "00CCCC";
+%colors = lines;
+
+img = imread(img_filename);
+xmax = ceil(size(img,2)/ppcm);
+
+tic
+%% Plotting the position vs time and marking neural recording times,
 % maze times and lap detection times
-close all
-event_filename = fullfile(exp_directory, 'Neuralynx', 'Events.nev');
-[Time,Data,Header,EventIDs,TTLs] = readevent(event_filename)
 
-idx = string(Data)=='Starting Recording';
-ri = Time(idx);
-idx = string(Data)=='Stopping Recording';
-rf = Time(idx);
+figure(1)
+[lap, idx_analysis] = lapdetector(exp_directory, xmax);
 
-% neural recording times
-r1i = ri(1); %105.221068;
-r1f = rf(1); %703.846944;
-r2i = ri(2); %945.026778;
-r2f = rf(2); %1341.248894;
+% filtered data:
+pos.filt.vx = filtertheta(pos.t, pos.vx, 0.01, 10); % cm/sec
+pos.filt.vy = filtertheta(pos.t, pos.vy, 0.01, 10); % cm/sec
+pos.filt.s = vecnorm([pos.filt.vx pos.filt.vy]')';  % speed in cm/sec
+pos.filt.ax = gradient(pos.filt.vx)./gradient(pos.t);   % ax in cm/sec
+pos.filt.ay = gradient(pos.filt.vy)./gradient(pos.t);   % ax in cm/sec
 
-% maze times
-m1i = 408.650168;
-m1f = 677.921799;
-m2i = 988.727761;
-m2f = 1303.765711;
+% select only the ones that are in the laps
+t = pos.t(idx_analysis);
+x = pos.x(idx_analysis);
+y = pos.y(idx_analysis);
+vx = pos.vx(idx_analysis);
+vy = pos.vy(idx_analysis);
+s = pos.filt.s(idx_analysis);
+frame = pos.frame(idx_analysis);
 
-% analysis times
-t1i = r1i;
-t1f = r1f;
-t2i = r2i;
-t2f = 1200; % 1160 will curtail the final lap and 1282 will be the whole version
+%% % MODIFY FOR EACH DAY!
+% Excluding some clusters (e.g. inter-neurons):
+% MODIFY FOR EACH DAY!
+cluster_exlude = [1 3];
+cluster(cluster_exlude)=[];
+disp(['clusters ' num2str(cluster_exlude) ' excluded.'])
+for c=1:length(cluster)
+    cluster(c).no = c;  % modify this in future
+end
+% exclude outliers
+idx = (t < 2705.005 | t > 2705.025);
+t = t(idx);
+x = x(idx);
+y = y(idx);
+vx = vx(idx);
+vy = vy(idx);
+s = s(idx);
+frame = frame(idx);
 
-t_crop_idx = ((pos.t > t1i) & (pos.t < t1f)) | ((pos.t > t2i) & (pos.t < t2f));
-t = pos.t(t_crop_idx);
-x = pos.x(t_crop_idx);
-y = pos.y(t_crop_idx);
-vx = pos.vx(t_crop_idx);
-vy = pos.vy(t_crop_idx);
-s = pos.s(t_crop_idx);
-frame = pos.frame(t_crop_idx);
+% Adding gap size to each lap
 
-% jump detection
-x_thresh = 82;
+% mean_gap_len = num2cell([22.0,21.9,21.8,21.7,24.4,24.3,24.6,24.5,24.5,24.6,24.5,24.6,...
+%     27.1,27.1,26.8,27.0,26.9,26.9,27.0,26.9,27.1,26.8,29.4,29.2,0.0,29.4,29.4,29.4,...
+%     29.7,29.5,29.3,29.4,29.5]);
+mean_gap_len = num2cell(repmat(24.5,21,1));
+[lap.gap] = mean_gap_len{:};
 
-% times that the rats jump (based on jump direction)
-jump_criteria_lefttward = (diff(x > x_thresh) == -1) & (vx(2:end) < -50);
-jump_criteria_rightward = (diff(x > x_thresh) == 1) & (vx(2:end) > 50);
-time_jump_leftward = t(jump_criteria_lefttward);
-time_jump_rightward = t(jump_criteria_rightward);
-x_jump_leftward = x(jump_criteria_lefttward);
-x_jump_rightward = x(jump_criteria_rightward);
-
-% lap detection
-N = length(time_jump_leftward)-1;
-t_left = ones(N,1); % lap at left
-t_right = ones(N,1); % lap at right
-x_left = ones(N,1);
-x_right = ones(N,1);
-
-for i=1:N+1
-    % exception handling for break time
-    if time_jump_leftward(i) < r1f && time_jump_leftward(i+1) > r2i
-        time_jump_leftward = [time_jump_leftward(1:i); r2i; time_jump_leftward(i+1:end)];
-        x_jump_leftward = [x_jump_leftward(1:i); x_thresh; x_jump_leftward(i+1:end)];
+%% Adding laps and direction to clusters
+for c=1:length(cluster)
+    cluster(c).lap = zeros(size(cluster(c).t));
+    cluster(c).dir = strings(size(cluster(c).t));
+    for l = 1:length(lap)
+        idx = (cluster(c).t >=lap(l).t(1)) & (cluster(c).t <lap(l).t(2)); % lap
+        cluster(c).lap(idx)= lap(l).no;
+        cluster(c).dir(idx)=lap(l).dir;
     end
-
-    %lap
-    tl = t(t>=time_jump_leftward(i) & t<=time_jump_leftward(i+1));
-    
-    [x_left(i), idx] = min(x(t>time_jump_leftward(i) & t<time_jump_leftward(i+1)));
-    t_left(i) = tl(idx);
-    
-    [x_right(i), idx] = max(x(t>time_jump_leftward(i) & t<time_jump_leftward(i+1)));   
-    t_right(i) = tl(idx);
 end
 
-% exception for beginning and end
-tl = t(t<time_jump_leftward(1));
-[x20, idx] = max(x(t<time_jump_leftward(1)));
-l20 = tl(idx);
-x_right = [x20;x_right];
-t_right = [l20;t_right];
-tl = t(t>time_jump_leftward(N+2));
-[x_left(N+2), idx] = min(x(t>time_jump_leftward(N+2)));
-t_left(N+2) = tl(idx);
+%% Plotting time vs horizontal position for all laps
+figure(2)
+N = max(nnz([lap.dir]=="left"),nnz([lap.dir]=="right"));
 
-% picking the frame where the jump has happened
-for i=1:N+1
-    % leftward laps
-    lap(2*i-1).dir = "left";
-    lap(2*i-1).no = 2*i-1;
-    lap(2*i-1).t = [t_right(i) t_left(i)];
-    lap(2*i-1).t_jump = time_jump_leftward(i);  % time of jump in the lap
-    lap(2*i-1).frame = pos.frame(pos.t==lap(2*i-1).t_jump); % frame of jump in the lap
-    
-    % rightward laps
-    if i==N+1
-        break;
-    end
-    lap(2*i).dir = "right";
-    lap(2*i).no = 2*i;
-    lap(2*i).t = [t_left(i) t_right(i+1)];
-    lap(2*i).t_jump = time_jump_rightward(i); % time of jump in the lap
-    lap(2*i).frame = pos.frame(pos.t==lap(2*i).t_jump); % frame of jump in the lap
+% rightward laps
+i = 2;
+for l=[lap([lap.dir]=="right").no]
+    subplot(N,2,i);
+    plot(x, t, 'b')
+    hold on
+    xlim([0 xmax])
+    ylim(lap(l).t)
+    title(['rightward lap ' num2str(lap(l).no)])
+    i = i + 2;
 end
 
-% ignore lap 25
-lap(25) = [];
+% leftward laps
+i = 1;
+for l=[lap([lap.dir]=="left").no]
+    subplot(N,2,i);
+    plot(x, t, 'b')
+    hold on
+    xlim([0 xmax])
+    ylim(lap(l).t)
+    title(['leftward lap, lap no ' num2str(lap(l).no)])
+    i = i + 2;
+end
 
+%% plotting the occupancy with arrows showing the velocity
+figure(3)
+imshow(img+50);
+figure(3)
 hold on
-rectangle('Position',[r1i,0,r1f-r1i,xmax],'FaceColor','y')
-rectangle('Position',[r2i,0,r2f-r2i,xmax],'FaceColor','y')
+quiver(x * ppcm,y * ppcm,vx * ppcm,vy * ppcm,20);
+saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
+title('Occupancy with Velocity')
 
-plot(pos.t, pos.x, '.b', t, x, '.k')
-ylim([0 xmax])
+%% interpolation at each lap
+dt = 1/1000; % interpolation 1 kHz
+posi.t = [];
+posi.x = [];
+posi.y = [];
+posi.lap = [];
+posi.dir = [];
 
-plot(t_left, x_left, 'pk', 'MarkerSize',15)
-plot(t_right, x_right, 'sk', 'MarkerSize',15)
+% Adding laps and direction to pos
+pos.lap = zeros(size(pos.t));
+pos.dir = strings(size(pos.t));
 
-plot(time_jump_leftward, x_jump_leftward, 'hc', 'MarkerSize',15)
-plot(time_jump_rightward, x_jump_rightward, 'hr', 'MarkerSize',15)
+for l = 1:length(lap)
+    
+    idx = (pos.t >=lap(l).t(1)) & (pos.t <lap(l).t(2)); % lap
+    pos.lap(idx) = lap(l).no;
+    pos.dir(idx)= lap(l).dir;
+    
+    % interpolation
+    
+    interp.t = lap(l).t(1):dt: lap(l).t(2);
+    % interpolation for position
+    interp.x = interp1(pos.t, pos.x, interp.t);
+    interp.y = interp1(pos.t, pos.y, interp.t);
+    
+    interp.lap = zeros(size(interp.t));
+    interp.dir = strings(size(interp.t));
+    interp.lap(:)=lap(l).no;
+    interp.dir(:)=lap(l).dir;
+    
+    posi.t = [posi.t interp.t];
+    posi.x = [posi.x interp.x];
+    posi.y = [posi.y interp.y];
+    posi.dir = [posi.dir interp.dir];
+    posi.lap = [posi.lap interp.lap];
+end
 
-set(gcf, 'Position', [100 100 2000 1500]);
+% figure(50)
+% plot(posi.t,posi.x,'.b')
+
+%% Rate map calculations
+% Rate map binning
+hist.bin_size = 3; % cm
+hist.edges = 0:hist.bin_size:xmax; % size of image to cm
+hist.posi = histcounts(posi.x,hist.edges) * dt; % seconds in each bin
+
+% Plotting the spikes on the path
+for l = 1:length(lap) % each lap
+    
+    % Figures of the rat in the mid-jump
+    figure(3+l)
+    set(gcf, 'Position', [100 100 1536 1175]);
+    ax1 = subplot(8,1,1:5);
+    img = imread([exp_directory filesep 'Videos' filesep 'frame-' num2str(lap(l).frame) '.pgm']);
+    imshow(img+50);
+    figure(3+l)
+    hold on
+    idx = (t>=lap(l).t(1) & t<=lap(l).t(2));
+    xlap = x(idx);
+    ylap = y(idx);
+    vxlap = vx(idx);
+    vylap = vy(idx);
+    quiver(xlap * ppcm,ylap * ppcm,vxlap * ppcm,vylap * ppcm);
+    
+    % occupancy histogram
+    hist.posi = histcounts(posi.x(posi.lap==l), hist.edges) * dt; % seconds in each bin
+    ax2 = subplot(8,1,6);
+    histogram('BinCounts', hist.posi, 'BinEdges', hist.edges);
+    ylabel('Occupancy (sec)')
+    xlim([0 xmax])
+    
+    for c=1:length(cluster) % each cluster
+        ax1 = subplot(8,1,1:5);
+        h = plot(cluster(c).x([cluster(c).lap]==l) * ppcm, cluster(c).y([cluster(c).lap]==l) * ppcm,...
+            'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
+        
+        title(['lap no. ' num2str(lap(l).no) ', cluster no. ' num2str(c) ', ' ...
+            num2str(cluster(c).name) '_l' num2str(num2str(l))], 'Interpreter', 'none');
+        
+        % spike histogram
+        ax3 = subplot(8,1,7);
+        hist.cluster = histcounts(cluster(c).x([cluster(c).lap]==l), hist.edges); % spikes in each bin
+        histogram('BinCounts', hist.cluster, 'BinEdges', hist.edges);
+        ylabel('Number of spikes')
+        
+        % Rate map
+        ax4 = subplot(8,1,8);
+        hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+        histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+        
+        ylabel('Rate Map (Hz)')
+        xlabel('Horizontal position (cm)')
+        
+        linkaxes([ax2 ax3 ax4],'x')
+        
+        
+        saveas(gcf,[exp_directory filesep 'Analysis' filesep 'cluster' num2str(c) '_lap' num2str(l) '.jpg'])
+        %set(h, 'Visible','off')
+        delete(h);
+    end
+end
+
+%% CSC
+csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
+addpath('../jumping');
+% theta phase
+for c=1:length(cluster)
+    cluster(c).phase = nan*cluster(c).t;
+end
+for l=1:length(lap)
+    [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
+    [theta, phase] = filtertheta(timecsc,lfp);
+    
+    % looking at all the clusters
+    for c=1:length(cluster)
+        idx = [cluster(c).lap]==l;
+        if nnz(idx) > 0 % if there a firing for cluster c in this lap
+            cluster(c).phase(idx) = interp1(timecsc,phase, cluster(c).t(idx));
+        end
+    end
+end
+
+%% Directional rate map for all the laps
+
+for i = 1:3
+    figure(200+i)
+    for j=1:14
+        c = (i-1) * 14 + j;
+        if c > length(cluster)
+            continue;
+        end
+        % leftward rate mapj
+        hist.posi = histcounts(posi.x(posi.dir=="left"), hist.edges) * dt; % seconds in each bin
+        hist.cluster = histcounts(cluster(c).x([cluster(c).dir]=="left"), hist.edges); % spikes in each bin
+        hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+        
+        a(2*j-1) = subplot(14,2,14*2-(2*j-1));
+        histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+        ylabel(['cluster ' num2str(c)]);
+        if j == 14
+            title('Rate Map (leftward)')
+        elseif j ==1
+            xlabel('Horizontal position (cm)')
+        end
+        
+        % rightward rate map
+        hist.posi = histcounts(posi.x(posi.dir=="right"), hist.edges) * dt; % seconds in each bin
+        hist.cluster = histcounts(cluster(c).x([cluster(c).dir]=="right"), hist.edges); % spikes in each bin
+        hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+        
+        a(2*j) = subplot(14,2,14*2-(2*j-1)+1);
+        histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+        ylabel(['cluster ' num2str(c)]);
+        linkaxes([a(2*j-1) a(2*j)],'y')
+        if j == 14
+            title('Rate Map (rightward)')
+        elseif j ==1
+            xlabel('Horizontal position (cm)')
+        end
+        
+    end
+    
+    set(gcf, 'Position', [100 100 1600 1300]);
+    linkaxes(a,'x')
+    zoom xon
+    xlim([0 xmax])
+    saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-' num2str(i) '.svg']))
+end
+toc
+%% Saving data
+mat_filename = fullfile(exp_directory,'analyzed_data.mat');
+save(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax','hist');
+disp(['File ' mat_filename ' has been created!'])

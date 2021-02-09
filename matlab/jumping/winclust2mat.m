@@ -1,12 +1,20 @@
-%% Extract data from the output of winclust (cluster mazes) and 
-% tracking.dat (tracking data) and save it in data.mat file 
+%%WINCLUST extracts data from the output of winclust (cluster mazes) and 
+% tracking.dat (tracking data) and save it in data.mat file in the
+% experiment directory.
+%
+%   See also LAPDETECTOR, ANALYZEDATA.
+%
+%   SGL 2021-01-31
+%
 
+clc
 %% Neural data
 exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
 exp_directory = uigetdir(exp_directory,'Select Experiment Folder');
 if exp_directory == 0
     return;
 end
+tic
 
 listing = dir(fullfile(exp_directory,'Neuralynx','TT*','cl-maze*.*'));
 names = string({listing.name}');
@@ -26,6 +34,8 @@ A = cellfun(@(x) importdata(x,',',13), absolue_paths, 'UniformOutput', false);
 %% Postion data
 addpath('../tracking');
 [t, x, y, p, frame] = readtrackingdata(exp_directory);
+
+% offset
 offset = 48.5827 - 0.2; %%%% ONLY for DAY 2 !! %%%%%% after modification
 
 offset_filename = fullfile(exp_directory,'offset.mat');
@@ -46,12 +56,12 @@ pos.vx = gradient(pos.x)./gradient(pos.t); % Vx in cm/sec
 pos.vy = gradient(pos.y)./gradient(pos.t); % Vy in cm/sec
 pos.s = vecnorm([pos.vx pos.vy]')'; % speed in cm/sec
 %pos.hd = atan2d(pos.vy,pos.vx); % estimation of hd based
-pos.ax = gradient(pos.vx)./gradient(pos.t); % ax in cm/sec
+%pos.ax = gradient(pos.vx)./gradient(pos.t); % ax in cm/sec
 
 % IO port status p and frame number
 pos.p = p;
 pos.frame = frame;
-        
+
 %% spike data
 cluster(N).name ='';
 for index = 1:N
@@ -72,6 +82,8 @@ for index = 1:N
     cluster(index).s = vecnorm([cluster(index).vx cluster(index).vy]')';
 end
 
+%% Saving
+toc
 spike = cluster;
 save(mat_filename,'pos','cluster','spike','ppcm', 'offset');
 disp(['File ' mat_filename ' has been created!'])
