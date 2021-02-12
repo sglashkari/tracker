@@ -21,7 +21,7 @@ img_filename = fullfile(img_directory, img_file);
 
 colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
 colors = repmat(colors', ceil(length(cluster)/length(colors))); % repeat the colors to match the total number of clusters
-colors(35) = "00CCCC";
+colors(35) = "#00CCCC";
 %colors = lines;
 
 img = imread(img_filename);
@@ -60,7 +60,7 @@ for c=1:length(cluster)
     cluster(c).no = c;  % modify this in future
 end
 % exclude outliers
-idx = (t < 2705.005 | t > 2705.025);
+idx = (t < 2705 | t > 2705.05) & (abs(s)<400);
 t = t(idx);
 x = x(idx);
 y = y(idx);
@@ -68,6 +68,15 @@ vx = vx(idx);
 vy = vy(idx);
 s = s(idx);
 frame = frame(idx);
+
+f = figure(1);
+clf(f);
+plot(t,x,'.k')
+set(gcf, 'Position', [100 100 1536 1175]);
+xlabel('Time (sec)')
+ylabel('Horizontal position (cm)')
+title('Overall view')
+saveas(gcf,[exp_directory filesep 'Analysis' filesep 'overall.svg'])
 
 % Adding gap size to each lap
 
@@ -118,12 +127,12 @@ end
 
 %% plotting the occupancy with arrows showing the velocity
 figure(3)
-imshow(img+50);
+imshow(1.5*img);
 figure(3)
 hold on
-quiver(x * ppcm,y * ppcm,vx * ppcm,vy * ppcm,20);
-saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
+quiver(x * ppcm,y * ppcm,vx * ppcm,vy * ppcm,1);
 title('Occupancy with Velocity')
+saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
 
 %% interpolation at each lap
 dt = 1/1000; % interpolation 1 kHz
@@ -285,6 +294,14 @@ for i = 1:3
             xlabel('Horizontal position (cm)')
         end
         
+        % edge of gap
+        hold on
+        plot([640 640]/ppcm, ylim,'b','LineWidth',2);
+        plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+        a(2*j-1) = subplot(14,2,14*2-(2*j-1));
+        hold on
+        plot([640 640]/ppcm, ylim,'b','LineWidth',2);
+        plot([892 892]/ppcm, ylim,'b','LineWidth',2);
     end
     
     set(gcf, 'Position', [100 100 1600 1300]);

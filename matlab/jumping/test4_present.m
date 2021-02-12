@@ -4,14 +4,14 @@ addpath('../jumping');
 exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax');
-x_thresh = 84;
+%x_thresh = 84;
 
 %lap_no = 21;
-cluster_no = 31;
+%cluster_no = 31;
 
-direction = 'left';
-N = nnz([lap.dir]==direction);
-c = cluster_no;
+direction = 'right';
+%N = nnz([lap.dir]==direction);
+%c = cluster_no;
 %% CSC
 csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
 
@@ -45,9 +45,9 @@ for l=1:length(lap)
     ax1 = subplot(4,1,1); hold on;
     ax2 = subplot(4,1,2); hold on;
     idx = pos.lap==l;
-    plot(pos.t(idx) - lap(l).t_jump_exact,pos.s(idx),'.b');
-    plot(pos.t(idx) - lap(l).t_jump_exact,pos.filt.s(idx),'r');
-    plot(pos.t(idx) - lap(l).t_jump_exact, 40*ones(size(pos.t(idx))),'g')
+    %plot(pos.t(idx) - lap(l).t_jump_exact,pos.s(idx),'.b');
+    plot(pos.t(idx) - lap(l).t_jump_exact,pos.filt.s(idx));%,'b');
+    %plot(pos.t(idx) - lap(l).t_jump_exact, 40*ones(size(pos.t(idx))),'k');
     %plot([lap(l).t_jump lap(l).t_jump], [0 300])
     %plot([lap(l).t_jump_exact lap(l).t_jump_exact], [0 300]);
     ylabel('Speed (cm/s)')
@@ -56,8 +56,8 @@ for l=1:length(lap)
     
  
     ax3 = subplot(4,1,3); hold on;
-    plot(timecsc - lap(l).t_jump_exact,lfp * 1e6,'Color','#D0D0D0')
-    plot(timecsc - lap(l).t_jump_exact,theta *1e6,'r');
+    %plot(timecsc - lap(l).t_jump_exact,lfp * 1e6,'Color','#D0D0D0')
+    plot(timecsc - lap(l).t_jump_exact,theta *1e6);%,'r');
     ylim([-700 700])
     ylabel('Theta (\muV)')
     t_idx = (timecsc > lap(l).t_jump_exact - 2) & (timecsc < lap(l).t_jump_exact + 2);% 1 sec before and 1 sec after
@@ -68,9 +68,13 @@ for l=1:length(lap)
     box on
     
     ax4 = subplot(4,1,4); hold on;
-    plot(timecsc - lap(l).t_jump_exact,(theta-lfp)*1e6)
+    [imu.t,imu.ax] = readcsc(fullfile(exp_directory,'Neuralynx','BASE_LAX.ncs'), lap(l).t * 1e6); % microseconds
+    [~,imu.ay] = readcsc(fullfile(exp_directory,'Neuralynx','BASE_LAY.ncs'), lap(l).t * 1e6); % microseconds
+    [~,imu.az] = readcsc(fullfile(exp_directory,'Neuralynx','BASE_LAZ.ncs'), lap(l).t * 1e6); % microseconds
+    imu.a = vecnorm([imu.ax imu.ay imu.az]')';
+    plot(imu.t - lap(l).t_jump_exact,imu.a)
     xlabel('Time (sec)')
-    ylabel('Error (\muV)')
+    ylabel('IMU acceleration')
     box on
     
     linkaxes([ax2 ax3 ax4],'x')
@@ -85,10 +89,10 @@ plot(t_theta_ave,lfp_ave*1e6,'Color','#808080');
 %plot(t_theta_ave,theta_ave*1e6,'r'); 
 ylabel('Average of all lfps (\muV)')
 theta_lft_ave = filtertheta(t_theta_ave,lfp_ave);
-%plot(t_theta_ave,theta_lft_ave*1e6,'r')
+linkaxes([ax1 ax2 ax3 ax4],'x')
 ylim([-400 400])
 box on
 
 sgtitle([direction 'ward laps aligned']);
 
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Alligned-' direction 'ward.svg']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Alligned-' direction '.svg']))

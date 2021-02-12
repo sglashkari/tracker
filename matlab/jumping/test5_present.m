@@ -1,20 +1,20 @@
-% SGL 2021-01-31
+% SGL 2021-01-31 (test3_present + rate map)
 clc; clear;
 addpath('../jumping');
 exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
-load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax');
-colors(35) = "#00CCCC";
+load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax','hist');
+%colors(35) = "#00CCCC";
 x_thresh = 84;
 v_thresh = 20;
 
 %lap_no = 10;
-cluster_no = [25 35];
-cluster_no = [6 11 23 16 35];
+cluster_no = [25 35 37];
+%cluster_no = [6 11 23 16 35];
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 
 direction = 'right'; 
-direction = 'left';
+%direction = 'left';
 N = nnz([lap.dir]==direction);
 isCSC = 1;
 
@@ -38,6 +38,7 @@ for l =1:length(lap)
 end
 
 tic
+
 %% CSC
 csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
 for l=1:length(lap)
@@ -214,3 +215,61 @@ set(gcf, 'Position', [100 700 1800 500]);
 xlim([-2 2])
 legend(h2,legendCell)
 saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '-' direction '.svg']))
+
+%}
+%% Rat-map with velocity filter
+N = length(cluster_no);
+i = 0;
+dt = 1/1000; % interpolation 1 kHz
+for c = cluster_no
+    
+    figure(200)
+    i = i+1;
+    % leftward rate map
+    hist.posi = histcounts(posi.x(posi.dir=="left"), hist.edges) * dt; % seconds in each bin
+    idx = [cluster(c).dir]=="left" & abs([cluster(c).vx]) > v_thresh;
+    hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
+    hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+    
+    a(2*i-1) = subplot(N,2,2*i-1);
+    histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+    ylabel(['cluster ' num2str(c)]);
+    if i == 1
+        title('Rate Map (leftward)')
+    elseif i == N
+        xlabel('Horizontal position (cm)')
+    end
+    
+    % rightward rate map
+    hist.posi = histcounts(posi.x(posi.dir=="right"), hist.edges) * dt; % seconds in each bin
+    idx = [cluster(c).dir]=="right" & abs([cluster(c).vx]) > v_thresh;
+    hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
+    hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+    
+    a(2*i) = subplot(N,2,2*i);
+    histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+    ylabel(['cluster ' num2str(c)]);
+    linkaxes([a(2*i-1) a(2*i)],'y')
+    if i == 1
+        title('Rate Map (rightward)')
+    elseif i == N
+        xlabel('Horizontal position (cm)')
+    end
+    
+    % edge of gap
+    hold on
+    plot([640 640]/ppcm, ylim,'b','LineWidth',2);
+    plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+    a(2*i-1) = subplot(N,2,2*i-1);
+    hold on
+    plot([640 640]/ppcm, ylim,'b','LineWidth',2);
+    plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+end
+
+toc
+set(gcf, 'Position', [100 100 1000 200+100*N]);
+linkaxes(a,'x')
+zoom xon
+xlim([0 xmax])
+sgtitle('Directional Ratemap (velocity filtered)');
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.svg']))
