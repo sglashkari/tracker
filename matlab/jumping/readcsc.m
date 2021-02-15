@@ -1,7 +1,7 @@
 function [Time,Data,Header] = readcsc(ncs_filename, TimeRange)
 if nargin == 0
      exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
-     [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'*.ncs'), 'Select Neuralynx CSC Data File');
+     [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'*.ncs'), 'Select ncs File');
      ncs_filename = fullfile(exp_directory, datafile);
 end
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples, Samples
@@ -39,7 +39,9 @@ SamplingFrequency = str2double(SamplingFrequencyString);
 ADBitVoltsString = extractAfter(Header{17},'-ADBitVolts ');
 ADBitVolts = str2double(ADBitVoltsString);
 
-Data = Samples(:)*ADBitVolts;
+max(Samples(:))
+
+Data = Samples(:)*ADBitVolts; % volts
 N = size(Samples);
 s = 1:N(1):N(1)*N(2);
 sq = 1:1:N(1)*N(2);
@@ -50,11 +52,11 @@ Data(isnan(Time))=[];
 Time(isnan(Time))=[];
 
 Time = Timestamps(1) + (1:length(Data)) * 1e6 / SamplingFrequency; % micrseconds
-Time = (Time * 1e-6)'; %seconds
+Time = (Time * 1e-6)'; % seconds
 
 if nargout == 0
     plot(Time,Data);
-    disp(size(Data))
+    fprintf('Size of data is %d.\n',length(Data));
     clear Time;
 end
     

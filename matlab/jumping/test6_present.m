@@ -1,4 +1,4 @@
-% SGL 2021-02-08
+% SGL 2021-02-15
 clc; clear; 
 close all
 addpath('../jumping');
@@ -31,15 +31,16 @@ imu_a_all = [];
 imu_w_all = [];
 lfp_all = [];
 i = 0;
-for l=1:length(lap)
+for l=1:2%length(lap)
     if lap(l).dir~=direction % filtering out undesired direction
         continue;
     end
     i = i + 1;
-    [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
+    [timecsc,lfp, header] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
+    header
     [theta, phase, mag] = filtertheta(timecsc,lfp);
-    ax1 = subplot(4,1,1); hold on;
-    ax2 = subplot(4,1,2); hold on;
+    ax1 = subplot(5,1,1); hold on;
+    ax2 = subplot(5,1,2); hold on;
     idx = pos.lap==l;
     %plot(pos.t(idx) - lap(l).t_jump_exact,pos.s(idx),'.b');
     plot(pos.t(idx) - lap(l).t_jump_exact,pos.filt.vx(idx));%,'b');
@@ -51,7 +52,7 @@ for l=1:length(lap)
     %ylim([0 300])
     
  
-    ax3 = subplot(4,1,3); hold on;
+    ax3 = subplot(5,1,3); hold on;
     %plot(timecsc - lap(l).t_jump_exact,lfp * 1e6,'Color','#D0D0D0')
     plot(timecsc - lap(l).t_jump_exact,theta *1e6);%,'r');
     ylim([-700 700])
@@ -63,7 +64,7 @@ for l=1:length(lap)
     t_lfp_ave = timecsc(t_idx) - lap(l).t_jump_exact;
     box on
     
-    ax4 = subplot(4,1,4); hold on;
+    ax4 = subplot(5,1,4); hold on;
     imu = readimu(fullfile(exp_directory,'Neuralynx'),lap(l).t * 1e6); % microseconds
     
     t_idx = (imu.t > lap(l).t_jump_exact - 2) & (imu.t < lap(l).t_jump_exact + 2); % 2 sec before and 2 sec after
@@ -72,32 +73,37 @@ for l=1:length(lap)
     imu_w_all(i,:) = imu.w(t_idx)';
     t_imu_ave = imu.t(t_idx) - lap(l).t_jump_exact;
     plot(imu.t - lap(l).t_jump_exact,imu.ax*1e6)
+    plot(imu.t - lap(l).t_jump_exact,imu.ay*1e6)
+    plot(imu.t - lap(l).t_jump_exact,imu.az*1e6)
+    %plot(imu.t - lap(l).t_jump_exact,imu.a*1e6)
     xlabel('Time (sec)')
     ylabel('IMU Lin Acc (\muV)')
     box on
     
-    linkaxes([ax2 ax3 ax4],'x')
+    ax5 = subplot(5,1,5); hold on
+    imu.vx = cumtrapz(imu.t,imu.a - mean(imu.a));
+    plot(imu.t - lap(l).t_jump_exact,imu.a*1e7)
+    plot(pos.t(idx) - lap(l).t_jump_exact,pos.filt.ax(idx));
+    xlabel('Time (sec)')
+    ylabel('IMU integration (cm)')
+    box on
+    
+    linkaxes([ax2 ax3 ax4 ax5],'x')
     xlim([-2 2])
 end
 
 % average thetas
-imu_a_ave = mean(imu_a_all);
-imu_w_ave = mean(imu_w_all);
-lfp_ave = mean(lfp_all);
-ax1 = subplot(4,1,1); hold off; hold on;
+imu_a_ave = mean(imu_a_all,1);
+imu_w_ave = mean(imu_w_all,1);
+lfp_ave = mean(lfp_all,1);
+ax1 = subplot(5,1,1); hold off; hold on;
 plot(t_lfp_ave,lfp_ave*1e6,'Color','#808080')
 plot(t_imu_ave,imu_a_ave*1e6,'r');
 plot(t_imu_ave,imu_w_ave*1e6,'g');
 legend('LFP','IMU Lin Acc','IMU Ang Vel')
 ylabel('Average of all laps (\muV)')
 
-% lfp_ave_filt = filtertheta(t_lfp_ave,lfp_ave);
-% plot(t_lfp_ave,lfp_ave_filt*1e6,'g');
-% 
-% imu_a_ave_filt = filtertheta(t_imu_ave,imu_a_ave);
-% plot(t_imu_ave,imu_a_ave_filt*1e6,'m');
-
-linkaxes([ax1 ax2 ax3 ax4],'x')
+linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
 %ylim([-400 400])
 box on
 
