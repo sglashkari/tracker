@@ -22,10 +22,10 @@ Mlx2MatCSC_both = {
     };
  
 if isunix
-    addpackagepath('Nlx2Mat_relDec15/binaries');  % Linux or Mac
+    addpath('../../pkgs/releaseDec2015/binaries');  % Linux or Mac
     [Timestamps,Samples] = cellfun(Mlx2MatCSC_both{1}, IMU_files, 'UniformOutput', false);
 else
-    addpackagepath('NeuralynxMatlabImportExport_v502'); % Windows
+    addpath('../../pkgs/MatlabImportExport_v6.0.0'); % Windows
     [Timestamps,Samples] = cellfun(Mlx2MatCSC_both{2}, IMU_files, 'UniformOutput', false);
 end
 
@@ -33,9 +33,9 @@ end
 samples_modified = cellfun(@(x) x(:),Samples, 'UniformOutput', false);
 ns = 1:length(samples_modified{1}); % number of samples
 
-% NLX IMU sampling rate is 3kHz so the precision is 333 microseconds 
+% NLX IMU sampling rate is 3kHz so the interval is 333 microseconds 
 % but its timestamping is at the rate of 5.859Hz and the
-% precision of 170667 microseconds
+% interval of 170667 microseconds
 ts = Timestamps{1};
 n = length(ts) - 1; % number of timestamps minus the last one
 nt = 1:512:(512*n+1) ; % timestamps happen every 512 samples

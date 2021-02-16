@@ -10,27 +10,27 @@ brightness_threshhold = 50;
 utc_correction = -18000; % 5 hr = 18000 sec (EST UTC−05:00)
 
 %% Camera Time (LED)
-% rosbag('info',rosbag_filename)
-% bag = rosbag(rosbag_filename);
-% 
-% %duration = 10; % seconds
-% bag = select(bag,'Time',[bag.StartTime, bag.EndTime]);
-% 
-% msgs = readMessages(bag);
-% t = bag.MessageList.Time;
-% 
-% disp('Data Extracted!')
-% 
-% tic
-% S = nan(length(t),1);
-% for frame_no=1:length(t)
-%     image = readImage(msgs{frame_no});
-%     S(frame_no) = nnz(image==255);
-%     if mod(frame_no,100)==0
-%         fprintf('%.1f %% of the video is extracted in %.f sec, the remaining time is %.f sec.\n',...
-%            100*frame_no/length(t),toc, toc * (1-frame_no/length(t))/(frame_no/length(t)));
-%     end
-% end
+rosbag('info',rosbag_filename)
+bag = rosbag(rosbag_filename);
+
+%duration = 10; % seconds
+bag = select(bag,'Time',[bag.StartTime, bag.EndTime]);
+
+msgs = readMessages(bag);
+t = bag.MessageList.Time;
+
+disp('Data Extracted!')
+
+tic
+S = nan(length(t),1);
+for frame_no=1:length(t)
+    image = readImage(msgs{frame_no});
+    S(frame_no) = nnz(image==255);
+    if mod(frame_no,100)==0
+        fprintf('%.1f %% of the video is extracted in %.f sec, the remaining time is %.f sec.\n',...
+           100*frame_no/length(t),toc, toc * (1-frame_no/length(t))/(frame_no/length(t)));
+    end
+end
 
 figure(1); hold on
 plot(t,S);

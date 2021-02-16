@@ -21,7 +21,7 @@ for l =1:length(lap)
     % detect the more exact time of jump
     idx = (pos.t>lap(l).t_jump-0.6) & (pos.t<lap(l).t_jump+0.4) & (pos.filt.s>40);
     idx = find(idx,1);
-    lap(l).t_jump_exact = pos.t(idx);
+    lap(l).t_jump_exact = pos.t(idx) + 4;
 end
 
 f=figure(100);
@@ -36,8 +36,7 @@ for l=1:2%length(lap)
         continue;
     end
     i = i + 1;
-    [timecsc,lfp, header] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
-    header
+    [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
     [theta, phase, mag] = filtertheta(timecsc,lfp);
     ax1 = subplot(5,1,1); hold on;
     ax2 = subplot(5,1,2); hold on;
@@ -81,9 +80,9 @@ for l=1:2%length(lap)
     box on
     
     ax5 = subplot(5,1,5); hold on
-    imu.vx = cumtrapz(imu.t,imu.a - mean(imu.a));
-    plot(imu.t - lap(l).t_jump_exact,imu.a*1e7)
-    plot(pos.t(idx) - lap(l).t_jump_exact,pos.filt.ax(idx));
+    plot(imu.t - lap(l).t_jump_exact,imu.a)
+%     imu = read_imu(fullfile(exp_directory,'Neuralynx'));
+%     plot(imu.time - lap(l).t_jump_exact,imu.lax)
     xlabel('Time (sec)')
     ylabel('IMU integration (cm)')
     box on
@@ -103,7 +102,7 @@ plot(t_imu_ave,imu_w_ave*1e6,'g');
 legend('LFP','IMU Lin Acc','IMU Ang Vel')
 ylabel('Average of all laps (\muV)')
 
-linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
+linkaxes([ax1 ax2 ax3 ax4],'x')
 %ylim([-400 400])
 box on
 

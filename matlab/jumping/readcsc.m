@@ -39,8 +39,6 @@ SamplingFrequency = str2double(SamplingFrequencyString);
 ADBitVoltsString = extractAfter(Header{17},'-ADBitVolts ');
 ADBitVolts = str2double(ADBitVoltsString);
 
-max(Samples(:))
-
 Data = Samples(:)*ADBitVolts; % volts
 N = size(Samples);
 s = 1:N(1):N(1)*N(2);
