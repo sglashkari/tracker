@@ -21,7 +21,7 @@ for l =1:length(lap)
     % detect the more exact time of jump
     idx = (pos.t>lap(l).t_jump-0.6) & (pos.t<lap(l).t_jump+0.4) & (pos.filt.s>40);
     idx = find(idx,1);
-    lap(l).t_jump_exact = pos.t(idx) + 4;
+    lap(l).t_jump_exact = pos.t(idx);
 end
 
 f=figure(100);
@@ -31,7 +31,7 @@ imu_a_all = [];
 imu_w_all = [];
 lfp_all = [];
 i = 0;
-for l=1:2%length(lap)
+for l=1:length(lap)
     if lap(l).dir~=direction % filtering out undesired direction
         continue;
     end
@@ -70,21 +70,25 @@ for l=1:2%length(lap)
     imu.filt.a = filtertheta(imu.t, imu.a, 0.01, 10);
     imu_a_all(i,:) = imu.a(t_idx)';
     imu_w_all(i,:) = imu.w(t_idx)';
+    
     t_imu_ave = imu.t(t_idx) - lap(l).t_jump_exact;
+    
     plot(imu.t - lap(l).t_jump_exact,imu.ax*1e6)
-    plot(imu.t - lap(l).t_jump_exact,imu.ay*1e6)
-    plot(imu.t - lap(l).t_jump_exact,imu.az*1e6)
+    %plot(imu.t - lap(l).t_jump_exact,imu.ay*1e6)
+    %plot(imu.t - lap(l).t_jump_exact,imu.az*1e6)
     %plot(imu.t - lap(l).t_jump_exact,imu.a*1e6)
+    legend('ax')
     xlabel('Time (sec)')
     ylabel('IMU Lin Acc (\muV)')
     box on
     
     ax5 = subplot(5,1,5); hold on
-    plot(imu.t - lap(l).t_jump_exact,imu.a)
+    plot(imu.t - lap(l).t_jump_exact,imu.az*1e6)
 %     imu = read_imu(fullfile(exp_directory,'Neuralynx'));
 %     plot(imu.time - lap(l).t_jump_exact,imu.lax)
+    legend('az')
     xlabel('Time (sec)')
-    ylabel('IMU integration (cm)')
+    ylabel('IMU Lin Acc (\muV)')
     box on
     
     linkaxes([ax2 ax3 ax4 ax5],'x')

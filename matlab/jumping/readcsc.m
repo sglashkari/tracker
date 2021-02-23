@@ -41,8 +41,8 @@ ADBitVolts = str2double(ADBitVoltsString);
 
 Data = Samples(:)*ADBitVolts; % volts
 N = size(Samples);
-s = 1:N(1):N(1)*N(2);
-sq = 1:1:N(1)*N(2);
+s = 1:N(1):N(1)*N(2); 
+sq = N(1)+1:1:N(1)*(N(2)+1); % tmp change
 
 Time = interp1(s,Timestamps,sq); % check accuracy of this method
 
