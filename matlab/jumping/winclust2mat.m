@@ -7,13 +7,48 @@
 %   SGL 2021-01-31
 %
 
+
+%% Intializing
 clc
-%% Neural data
-exp_directory = '~/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
+exp_directory = '/home/shahin/Desktop/2020-11-11_Rat913-02';
 exp_directory = uigetdir(exp_directory,'Select Experiment Folder');
 if exp_directory == 0
     return;
 end
+
+%% Experiment information
+idx = strfind(exp_directory,filesep);
+
+% finding rat number and day number
+try
+    exp.name = string(extractAfter(exp_directory, idx(end)));
+    exp.rat_no = str2double(extractBetween(exp.name, 'Rat','-'));
+    idx = strfind(exp.name,'-');
+    exp.day = str2double(extractAfter(exp.name, idx(end)));
+catch
+    prompt = {'Enter Rat Number:','Enter Day Number:'};
+    dlgtitle = 'Input';
+    dims = [1 25];
+    definput = {'913','2'};
+    answer = inputdlg(prompt,dlgtitle,dims,definput);
+    if size(answer)<1
+        error('Rat number or Day number is unclear!');
+    end
+    exp.rat_no = str2double(answer{1});
+    exp.day = str2double(answer{2});
+end
+
+% finding start and finish time
+event_filename = fullfile(exp_directory,'Neuralynx','Events.nev');
+[~,~,Header] = readevent(event_filename);
+InputFormat = 'yyyy/MM/dd HH:mm:ss';
+StartTimeString = extractAfter(Header{7},'-TimeCreated ');
+exp.start = datetime(StartTimeString,'InputFormat',InputFormat,'TimeZone','America/New_York');
+FinishTimeString = extractAfter(Header{8},'-TimeClosed ');
+exp.finish = datetime(FinishTimeString,'InputFormat',InputFormat,'TimeZone','America/New_York');
+exp.date = datetime(extractBefore(StartTimeString,' '),'InputFormat','yyyy/MM/dd','TimeZone','America/New_York')
+
+%% Neural Data
 tic
 
 listing = dir(fullfile(exp_directory,'Neuralynx','TT*','cl-maze*.*'));
@@ -35,11 +70,13 @@ A = cellfun(@(x) importdata(x,',',13), absolue_paths, 'UniformOutput', false);
 addpath('../tracking');
 [t, x, y, p, frame] = readtrackingdata(exp_directory);
 
-% offset
-offset = 48.5827 - 0.2; %%%% ONLY for DAY 2 !! %%%%%% after modification
-
-offset_filename = fullfile(exp_directory,'offset.mat');
-load(offset_filename, 'offset')
+switch exp.date 
+    case '11-Nov-2020'
+        offset = 48.5827 - 0.2; %%%% ONLY for DAY 2 !! %%%%%% after modification
+    otherwise
+        offset_filename = fullfile(exp_directory,'offset.mat');
+        load(offset_filename, 'offset')
+end
 
 % velocity
 % 2020-03 5 ft = 1524 mm = 480 pixels (each pixel = 3.175 mm)
@@ -84,6 +121,5 @@ end
 
 %% Saving
 toc
-spike = cluster;
-save(mat_filename,'pos','cluster','spike','ppcm', 'offset');
+save(mat_filename,'pos','cluster','exp','ppcm', 'offset');
 disp(['File ' mat_filename ' has been created!'])

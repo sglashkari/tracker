@@ -1,5 +1,8 @@
-
 %% Write an Video File for a Lap
+% This is not the final version
+% in this version the video is created in the matlab
+% for final version check makevideowithaudio
+
 close all
 clc; clear;
 

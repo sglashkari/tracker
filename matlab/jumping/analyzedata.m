@@ -10,8 +10,8 @@ if isequal(datafile, 0)
     error('Data file was not selected!')
 end
 mat_filename = fullfile(exp_directory, datafile);
-load(mat_filename, 'pos', 'cluster', 'ppcm', 'offset')
-clearvars -except datafile exp_directory pos cluster ppcm offset;
+load(mat_filename, 'pos', 'exp', 'cluster', 'ppcm', 'offset')
+clearvars -except datafile exp_directory pos exp cluster ppcm offset;
 
 [img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','*.pgm'), 'Select Image File');
 if isequal(img_file, 0)
@@ -53,25 +53,28 @@ frame = pos.frame(idx_analysis);
 %% % MODIFY FOR EACH DAY!
 % Excluding some clusters (e.g. inter-neurons):
 % MODIFY FOR EACH DAY!
-cluster_exlude = [1 3];
-cluster(cluster_exlude)=[];
-disp(['clusters ' num2str(cluster_exlude) ' excluded.'])
-for c=1:length(cluster)
-    cluster(c).no = c;  % modify this in future
+switch exp.date
+    case '22-Nov-2020'
+        cluster_exlude = [1 3];
+        cluster(cluster_exlude)=[];
+        disp(['clusters ' num2str(cluster_exlude) ' excluded.'])
+        for c=1:length(cluster)
+            cluster(c).no = c;  % modify this in future
+        end
+        % exclude outliers
+        idx = (t < 2705 | t > 2705.05) & (abs(s)<400);
+        t = t(idx);
+        x = x(idx);
+        y = y(idx);
+        vx = vx(idx);
+        vy = vy(idx);
+        s = s(idx);
+        frame = frame(idx);
+        f = figure(1);
+        clf(f);
+        plot(t,x,'.k')
 end
-% exclude outliers
-idx = (t < 2705 | t > 2705.05) & (abs(s)<400);
-t = t(idx);
-x = x(idx);
-y = y(idx);
-vx = vx(idx);
-vy = vy(idx);
-s = s(idx);
-frame = frame(idx);
 
-f = figure(1);
-clf(f);
-plot(t,x,'.k')
 set(gcf, 'Position', [100 100 1536 1175]);
 xlabel('Time (sec)')
 ylabel('Horizontal position (cm)')
@@ -79,11 +82,15 @@ title('Overall view')
 saveas(gcf,[exp_directory filesep 'Analysis' filesep 'overall.svg'])
 
 % Adding gap size to each lap
-
-% mean_gap_len = num2cell([22.0,21.9,21.8,21.7,24.4,24.3,24.6,24.5,24.5,24.6,24.5,24.6,...
-%     27.1,27.1,26.8,27.0,26.9,26.9,27.0,26.9,27.1,26.8,29.4,29.2,0.0,29.4,29.4,29.4,...
-%     29.7,29.5,29.3,29.4,29.5]);
-mean_gap_len = num2cell(repmat(24.5,21,1));
+switch exp.date
+    case '11-Nov-2020'
+        mean_gap_len = num2cell([22.0,21.9,21.8,21.7,24.4,24.3,24.6,24.5,24.5,24.6,24.5,24.6,...
+            27.1,27.1,26.8,27.0,26.9,26.9,27.0,26.9,27.1,26.8,29.4,29.2,29.4,29.4,29.4,29.4,...
+            29.7,29.5,29.3,29.4,29.5]);
+        mean_gap_len = num2cell(repmat(24.5,34,1)); % delete this later!
+    case '22-Nov-2020'
+        mean_gap_len = num2cell(repmat(24.5,21,1));
+end
 [lap.gap] = mean_gap_len{:};
 
 %% Adding laps and direction to clusters

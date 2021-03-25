@@ -9,7 +9,7 @@ load(mat_filename, 'lap', 'pos', 'cluster');
 % 
 s = '';
 
-for l=2:2
+for l=20:20
     timerange = lap(l).t_jump + [-2 2];             % Time range of recording (2 sec before to 2 sec after jump)
     videoframes = pos.frame(pos.t>=timerange(1) & pos.t<=timerange(end)); % frames in the timerange
     command = sprintf('rsync -tvrPhe "ssh -p 25" dome3tracking@dome3router:/media/dome3tracking/Videos/2020-11-22/frame-{%d..%d}.raw /home/shahin/Downloads/test-raw/%d/',videoframes(1),videoframes(end),l);

@@ -9,12 +9,12 @@ x_thresh = 84;
 v_thresh = 20;
 
 %lap_no = 10;
-cluster_no = [25 35 37];
-%cluster_no = [6 11 23 16 35];
+%cluster_no = [25 35 37];
+cluster_no = [6 23 16];
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 
-direction = 'right'; 
-%direction = 'left';
+%direction = 'right'; 
+direction = 'left';
 N = nnz([lap.dir]==direction);
 isCSC = 1;
 
@@ -85,7 +85,7 @@ for l=1:length(lap)
     xlim([lap(l).t_jump-1 lap(l).t_jump+1])
     
     set(gcf, 'Position', [100 100 1536 1175]);
-    saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.svg']))
+    saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
 %     if length(cluster_no) == 1
 %         
 %     else
@@ -151,6 +151,9 @@ for c = cluster_no
         end
     end
     title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward'])
+    if strcmp(direction,'left')
+        set ( gca, 'xdir', 'reverse' )
+    end
     xlabel('Horizontal position (cm)')
     ylabel('Phase (angle)')
     ylim([-180 540])
@@ -209,12 +212,12 @@ end
 f = figure(1001); hold on
 set(gcf, 'Position', [100 100 1800 500]);
 legend(h1, legendCell)
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Pos-cl' mat2str(cluster_no) '-' direction '.svg']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Pos-cl' mat2str(cluster_no) '-' direction '.png']))
 f = figure(1003); hold on;
 set(gcf, 'Position', [100 700 1800 500]);
 xlim([-2 2])
 legend(h2,legendCell)
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '-' direction '.svg']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '-' direction '.png']))
 
 %}
 %% Rat-map with velocity filter
@@ -231,7 +234,8 @@ for c = cluster_no
     hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
     hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
     
-    a(2*i-1) = subplot(N,2,2*i-1);
+    %a(2*i-1) = subplot(N,2,2*i-1);
+    a(i) = subplot(N,1,i);
     histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
     ylabel(['cluster ' num2str(c)]);
     if i == 1
@@ -240,30 +244,34 @@ for c = cluster_no
         xlabel('Horizontal position (cm)')
     end
     
-    % rightward rate map
-    hist.posi = histcounts(posi.x(posi.dir=="right"), hist.edges) * dt; % seconds in each bin
-    idx = [cluster(c).dir]=="right" & abs([cluster(c).vx]) > v_thresh;
-    hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
-    hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+    set ( gca, 'xdir', 'reverse' )
     
-    a(2*i) = subplot(N,2,2*i);
-    histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
-    ylabel(['cluster ' num2str(c)]);
-    linkaxes([a(2*i-1) a(2*i)],'y')
-    if i == 1
-        title('Rate Map (rightward)')
-    elseif i == N
-        xlabel('Horizontal position (cm)')
-    end
+    
+%     % rightward rate map
+%     hist.posi = histcounts(posi.x(posi.dir=="right"), hist.edges) * dt; % seconds in each bin
+%     idx = [cluster(c).dir]=="right" & abs([cluster(c).vx]) > v_thresh;
+%     hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
+%     hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+%     
+%     a(2*i) = subplot(N,2,2*i);
+%     histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+%     ylabel(['cluster ' num2str(c)]);
+%     linkaxes([a(2*i-1) a(2*i)],'y')
+%     if i == 1
+%         title('Rate Map (rightward)')
+%     elseif i == N
+%         xlabel('Horizontal position (cm)')
+%     end
     
     % edge of gap
     hold on
     plot([640 640]/ppcm, ylim,'b','LineWidth',2);
     plot([892 892]/ppcm, ylim,'b','LineWidth',2);
-    a(2*i-1) = subplot(N,2,2*i-1);
-    hold on
-    plot([640 640]/ppcm, ylim,'b','LineWidth',2);
-    plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+    set ( gca, 'xdir', 'reverse' )
+%     a(2*i-1) = subplot(N,2,2*i-1);
+%     hold on
+%     plot([640 640]/ppcm, ylim,'b','LineWidth',2);
+%     plot([892 892]/ppcm, ylim,'b','LineWidth',2);
 end
 
 toc
@@ -272,4 +280,4 @@ linkaxes(a,'x')
 zoom xon
 xlim([0 xmax])
 sgtitle('Directional Ratemap (velocity filtered)');
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.svg']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.png']))

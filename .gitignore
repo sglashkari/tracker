@@ -62,8 +62,9 @@
 *.3dm
 *.max
 
-# pgm
+# pgm and ppm
 *.pgm
+*.ppm
 
 # Video
 *.wmv
