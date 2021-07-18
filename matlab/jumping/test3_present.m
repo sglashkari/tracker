@@ -11,6 +11,7 @@ v_thresh = 20;
 %lap_no = 10;
 cluster_no = [25 35];
 cluster_no = [6 11 23 16 35];
+cluster_no = [6 23 16];
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 
 direction = 'right'; 
@@ -50,22 +51,22 @@ for l=1:length(lap)
     
     idx = pos.lap==l;
     ax1 = subplot(4,1,1);
-    plot(pos.t(idx),pos.x(idx));
+    plot(pos.t(idx)-lap(l).t_jump,pos.x(idx));
     ylabel('Horizontal position (cm)')
     title(['lap ' num2str(l) ' - ' direction 'ward']);
     
     ax2 = subplot(4,1,2); hold on;
-    plot(pos.t(idx),pos.filt.s(idx),'b');
+    plot(pos.t(idx)-lap(l).t_jump,pos.filt.s(idx),'b');
     ylabel('Speed (cm/s)')
     ylim([0 300])
     
     ax3 = subplot(4,1,3); hold on
-    plot(timecsc,phase)
+    plot(timecsc-lap(l).t_jump,phase)
     % theta phase
     for c=cluster_no
         idx = [cluster(c).lap]==l;
         if nnz(idx) > 0 % if there a firing for one of cluster_no in this lap
-            plot(cluster(c).t(idx), cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
+            plot(cluster(c).t(idx)-lap(l).t_jump, cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
         end
     end
     legend([{'Theta Phase'};legendCell])
@@ -73,15 +74,15 @@ for l=1:length(lap)
     ylabel('Phase (Degrees)')
     
     ax4 = subplot(4,1,4);
-    plot(timecsc,lfp * 1e6,'Color','#D0D0D0')
+    plot(timecsc-lap(l).t_jump,lfp * 1e6,'Color','#D0D0D0')
     hold on;
-    plot(timecsc,theta *1e6,'r');
+    plot(timecsc-lap(l).t_jump,theta *1e6,'r');
     ylim([-400 400])
     ylabel('Theta (\muV)')
     xlabel('Time (sec)')
     
     linkaxes([ax1 ax2 ax3 ax4],'x')
-    xlim([lap(l).t_jump-1 lap(l).t_jump+1])
+    xlim([-1 1])
     
     set(gcf, 'Position', [100 100 1536 1175]);
     saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.svg']))

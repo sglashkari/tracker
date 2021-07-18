@@ -11,7 +11,7 @@ function a = testoptionals(width,varargin)
    addParameter(p,'units',defaultUnits,@isstring);
    addParameter(p,'shape',defaultShape,...
                  @(x) any(validatestring(x,expectedShapes)));
-   parse(p,width,varargin{:});
+   parse(p,width,varargin{:})
    p.Results
    a = p.Results.width*p.Results.height; 
 end

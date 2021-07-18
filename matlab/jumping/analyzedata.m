@@ -32,7 +32,7 @@ tic
 % maze times and lap detection times
 
 figure(1)
-[lap, idx_analysis] = lapdetector(exp_directory, xmax);
+[lap, idx_analysis] = lapdetector(exp_directory, xmax, 2); %  mode 1 (the whole lap)  ^ mode 2 (2 sec before to 2 sec after)
 
 % filtered data:
 pos.filt.vx = filtertheta(pos.t, pos.vx, 0.01, 10); % cm/sec
@@ -84,14 +84,15 @@ saveas(gcf,[exp_directory filesep 'Analysis' filesep 'overall.svg'])
 % Adding gap size to each lap
 switch exp.date
     case '11-Nov-2020'
-        mean_gap_len = num2cell([22.0,21.9,21.8,21.7,24.4,24.3,24.6,24.5,24.5,24.6,24.5,24.6,...
+        mean_gap_len = [22.0,21.9,21.8,21.7,24.4,24.3,24.6,24.5,24.5,24.6,24.5,24.6,...
             27.1,27.1,26.8,27.0,26.9,26.9,27.0,26.9,27.1,26.8,29.4,29.2,29.4,29.4,29.4,29.4,...
-            29.7,29.5,29.3,29.4,29.5]);
-        mean_gap_len = num2cell(repmat(24.5,34,1)); % delete this later!
+            29.7,29.5,29.3,29.4,29.5];
     case '22-Nov-2020'
-        mean_gap_len = num2cell(repmat(24.5,21,1));
+        mean_gap_len = repmat([640/ppcm 892/ppcm],21,1);
 end
-[lap.gap] = mean_gap_len{:};
+for l=[lap.no]
+    lap(l).gap = mean_gap_len(l,:);
+end
 
 %% Adding laps and direction to clusters
 for c=1:length(cluster)
@@ -146,6 +147,8 @@ dt = 1/1000; % interpolation 1 kHz
 posi.t = [];
 posi.x = [];
 posi.y = [];
+posi.vx = [];
+posi.vy = [];
 posi.lap = [];
 posi.dir = [];
 
@@ -165,6 +168,9 @@ for l = 1:length(lap)
     % interpolation for position
     interp.x = interp1(pos.t, pos.x, interp.t);
     interp.y = interp1(pos.t, pos.y, interp.t);
+    % interpolation for velocity
+    interp.vx = interp1(pos.t, pos.vx, interp.t);
+    interp.vy = interp1(pos.t, pos.vy, interp.t);    
     
     interp.lap = zeros(size(interp.t));
     interp.dir = strings(size(interp.t));
@@ -174,6 +180,8 @@ for l = 1:length(lap)
     posi.t = [posi.t interp.t];
     posi.x = [posi.x interp.x];
     posi.y = [posi.y interp.y];
+    posi.vx = [posi.vx interp.vx];
+    posi.vy = [posi.vy interp.vy];
     posi.dir = [posi.dir interp.dir];
     posi.lap = [posi.lap interp.lap];
 end
@@ -295,6 +303,7 @@ for i = 1:3
         histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
         ylabel(['cluster ' num2str(c)]);
         linkaxes([a(2*j-1) a(2*j)],'y')
+        ylim(max([0 10],ylim))
         if j == 14
             title('Rate Map (rightward)')
         elseif j ==1
@@ -303,12 +312,12 @@ for i = 1:3
         
         % edge of gap
         hold on
-        plot([640 640]/ppcm, ylim,'b','LineWidth',2);
-        plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+        plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
         a(2*j-1) = subplot(14,2,14*2-(2*j-1));
         hold on
-        plot([640 640]/ppcm, ylim,'b','LineWidth',2);
-        plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+        plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
     end
     
     set(gcf, 'Position', [100 100 1600 1300]);

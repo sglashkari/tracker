@@ -5,16 +5,19 @@ exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax','hist');
 %colors(35) = "#00CCCC";
+colors(16) = "red";
 x_thresh = 84;
-v_thresh = 20;
+v_thresh = 0;
 
 %lap_no = 10;
-%cluster_no = [25 35 37];
+cluster_no = [25 35 37];
 cluster_no = [6 23 16];
+% cluster_no = 37;
+% cluster_no = 11;
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 
-%direction = 'right'; 
-direction = 'left';
+direction = 'right';
+direction = 'left'; 
 N = nnz([lap.dir]==direction);
 isCSC = 1;
 
@@ -40,62 +43,70 @@ end
 tic
 
 %% CSC
-csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
-for l=1:length(lap)
-    if lap(l).dir~=direction || ~isCSC % filtering out undesired direction
-        continue;
-    end
-    figure(100+l)
-    [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
-    [theta, phase] = filtertheta(timecsc,lfp);
-    
-    idx = pos.lap==l;
-    ax1 = subplot(4,1,1);
-    plot(pos.t(idx),pos.x(idx));
-    ylabel('Horizontal position (cm)')
-    title(['lap ' num2str(l) ' - ' direction 'ward']);
-    
-    ax2 = subplot(4,1,2); hold on;
-    plot(pos.t(idx),pos.filt.s(idx),'b');
-    ylabel('Speed (cm/s)')
-    ylim([0 300])
-    
-    ax3 = subplot(4,1,3); hold on
-    plot(timecsc,phase)
-    % theta phase
-    for c=cluster_no
-        idx = [cluster(c).lap]==l;
-        if nnz(idx) > 0 % if there a firing for one of cluster_no in this lap
-            plot(cluster(c).t(idx), cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
-        end
-    end
-    legend([{'Theta Phase'};legendCell])
-    ylim([-180 180])
-    ylabel('Phase (Degrees)')
-    
-    ax4 = subplot(4,1,4);
-    plot(timecsc,lfp * 1e6,'Color','#D0D0D0')
-    hold on;
-    plot(timecsc,theta *1e6,'r');
-    ylim([-400 400])
-    ylabel('Theta (\muV)')
-    xlabel('Time (sec)')
-    
-    linkaxes([ax1 ax2 ax3 ax4],'x')
-    xlim([lap(l).t_jump-1 lap(l).t_jump+1])
-    
-    set(gcf, 'Position', [100 100 1536 1175]);
-    saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
-%     if length(cluster_no) == 1
-%         
-%     else
-%         mat2str(cluster_no)
-%         
-%         saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction 'ward-lap_' num2str(l) '.svg']))
+% csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
+% for l=1:length(lap)
+%     if lap(l).dir~=direction || ~isCSC % filtering out undesired direction
+%         continue;
 %     end
-    
-end
-toc
+%     figure(100+l); 
+%     [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
+%     [theta, phase] = filtertheta(timecsc,lfp);
+%     
+%     idx = pos.lap==l;
+%     ax1 = subplot(4,1,1); hold on
+%     plot(pos.t(idx)-lap(l).t_jump,pos.x(idx));
+%     ylabel('Horizontal position (cm)')
+%     title(['lap ' num2str(l) ' - ' direction 'ward']);
+% 
+%     
+%     ax2 = subplot(4,1,2); hold on;
+%     plot(pos.t(idx)-lap(l).t_jump,pos.filt.s(idx),'m');
+%     ylabel('Speed (cm/s)')
+%     ylim([0 300])
+%     % range of gap:
+%     gapidx = pos.x(idx)>lap(l).gap(1) & pos.x(idx)<=lap(l).gap(2);
+%     gapidx = [0; diff(gapidx)];
+%     post = pos.t(idx);
+%     plot(repmat(post(find(gapidx,1)),1,2)-lap(l).t_jump, ylim,'b','LineWidth',2);
+%     plot(repmat(post(find(gapidx,2)),1,2)-lap(l).t_jump, ylim,'b','LineWidth',2);
+%     
+%     
+%     ax3 = subplot(4,1,3); hold on
+%     plot(timecsc-lap(l).t_jump,phase)
+%     % theta phase
+%     for c=cluster_no
+%         idx = [cluster(c).lap]==l;
+%         if nnz(idx) > 0 % if there a firing for one of cluster_no in this lap
+%             plot(cluster(c).t(idx)-lap(l).t_jump, cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
+%         end
+%     end
+%     legend([{'Theta Phase'};legendCell])
+%     ylim([-180 180])
+%     ylabel('Phase (Degrees)')
+%     
+%     ax4 = subplot(4,1,4);
+%     plot(timecsc-lap(l).t_jump,lfp * 1e6,'Color','#D0D0D0')
+%     hold on;
+%     plot(timecsc-lap(l).t_jump,theta *1e6,'r');
+%     ylim([-400 400])
+%     ylabel('Theta (\muV)')
+%     xlabel('Time (sec)')
+%     
+%     linkaxes([ax1 ax2 ax3 ax4],'x')
+%     xlim([-2 2])
+%     
+%     set(gcf, 'Position', [100 100 1536 1175]);
+%     saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
+% %     if length(cluster_no) == 1
+% %         
+% %     else
+% %         mat2str(cluster_no)
+% %         
+% %         saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction 'ward-lap_' num2str(l) '.svg']))
+% %     end
+%     
+% end
+% toc
 %% Phase Plots
 flag1 = 0;
 flag2 = 0;
@@ -118,8 +129,8 @@ for c = cluster_no
         plot(cluster(c).x(idx), 360 + cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
         title(['cluster(s) ' mat2str(cluster_no) ' lap ' num2str(l) ' ' direction 'ward'])
         ylabel('Phase (angle)')
-        plot([640 640]/ppcm, [-180 540],'b','LineWidth',2);
-        plot([892 892]/ppcm, [-180 540],'b','LineWidth',2);
+        plot(repmat(lap(l).gap(1),2,1), [-180 540],'b','LineWidth',2);
+        plot(repmat(lap(l).gap(2),2,1), [-180 540],'b','LineWidth',2);
         ylim([-180 540])
         zoom xon
     end
@@ -134,8 +145,8 @@ for c = cluster_no
     f = figure(1001); hold on
     flag = 0;
     if c == cluster_no(1) % only draw line for the fist time
-        plot([640 640]/ppcm, [-180 540],'b','LineWidth',2);
-        plot([892 892]/ppcm, [-180 540],'b','LineWidth',2);
+        plot(repmat(lap(l).gap(1),2,1), [-180 540],'b','LineWidth',2);
+        plot(repmat(lap(l).gap(2),2,1), [-180 540],'b','LineWidth',2);
     end
     for l=1:length(lap)
         if lap(l).dir~=direction % filtering out undesired direction
@@ -150,10 +161,10 @@ for c = cluster_no
             flag = 1; % just do this once
         end
     end
-    title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward'])
-    if strcmp(direction,'left')
-        set ( gca, 'xdir', 'reverse' )
-    end
+    title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward  (velocity filtered: v > ' num2str(v_thresh) ' cm/s)'])
+%     if strcmp(direction,'left')
+%         set ( gca, 'xdir', 'reverse' )
+%     end
     xlabel('Horizontal position (cm)')
     ylabel('Phase (angle)')
     ylim([-180 540])
@@ -199,6 +210,15 @@ for c = cluster_no
             flag = 1; % just do this once
         end
         title(['cluster ' num2str(c) ' lap ' num2str(l)])
+        
+        % range of gap:
+        idx = pos.lap==l;
+        gapidx = pos.x(idx)>lap(l).gap(1) & pos.x(idx)<=lap(l).gap(2);
+        gapidx = [0; diff(gapidx)];
+        post = pos.t(idx);
+        plot(repmat(post(find(gapidx,1)),1,2)-lap(l).t_jump, [-180 540],'b','LineWidth',0.25);
+        plot(repmat(post(find(gapidx,2)),1,2)-lap(l).t_jump, [-180 540],'b','LineWidth',0.25);
+    
     end
     title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward'])
     legend(legendCell)
@@ -229,49 +249,57 @@ for c = cluster_no
     figure(200)
     i = i+1;
     % leftward rate map
-    hist.posi = histcounts(posi.x(posi.dir=="left"), hist.edges) * dt; % seconds in each bin
+    idx = posi.dir=="left" & abs(posi.vx) > v_thresh;
+    hist.posi = histcounts(posi.x(idx), hist.edges) * dt; % seconds in each bin
     idx = [cluster(c).dir]=="left" & abs([cluster(c).vx]) > v_thresh;
     hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
     hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
     
-    %a(2*i-1) = subplot(N,2,2*i-1);
-    a(i) = subplot(N,1,i);
+    a(2*i-1) = subplot(N,2,2*i-1);
+    %a(i) = subplot(N,1,i);
     histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
     ylabel(['cluster ' num2str(c)]);
+    xlabel('Horizontal position (cm)');
     if i == 1
         title('Rate Map (leftward)')
-    elseif i == N
+    end
+    if i == N
         xlabel('Horizontal position (cm)')
     end
     
-    set ( gca, 'xdir', 'reverse' )
+%     set ( gca, 'xdir', 'reverse' )
     
     
-%     % rightward rate map
-%     hist.posi = histcounts(posi.x(posi.dir=="right"), hist.edges) * dt; % seconds in each bin
-%     idx = [cluster(c).dir]=="right" & abs([cluster(c).vx]) > v_thresh;
-%     hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
-%     hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
-%     
-%     a(2*i) = subplot(N,2,2*i);
-%     histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
-%     ylabel(['cluster ' num2str(c)]);
-%     linkaxes([a(2*i-1) a(2*i)],'y')
-%     if i == 1
-%         title('Rate Map (rightward)')
-%     elseif i == N
-%         xlabel('Horizontal position (cm)')
-%     end
+    % rightward rate map
+    idx = posi.dir=="right" & abs(posi.vx) > v_thresh;
+    hist.posi = histcounts(posi.x(idx), hist.edges) * dt; % seconds in each bin
+    idx = [cluster(c).dir]=="right" & abs([cluster(c).vx]) > v_thresh;
+    hist.cluster = histcounts(cluster(c).x(idx), hist.edges); % spikes in each bin
+    hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+    
+    a(2*i) = subplot(N,2,2*i);
+    histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); %rate map histogram
+    ylabel(['cluster ' num2str(c)]);
+    linkaxes([a(2*i-1) a(2*i)],'y')
+    ymax = ylim;
+    ylim([0 ymax(2)]) % start from 0 when no cell rate map is null
+    
+    if i == 1
+        title('Rate Map (rightward)')
+    end
+    if i == N
+        xlabel('Horizontal position (cm)')
+    end
     
     % edge of gap
     hold on
-    plot([640 640]/ppcm, ylim,'b','LineWidth',2);
-    plot([892 892]/ppcm, ylim,'b','LineWidth',2);
-    set ( gca, 'xdir', 'reverse' )
-%     a(2*i-1) = subplot(N,2,2*i-1);
-%     hold on
-%     plot([640 640]/ppcm, ylim,'b','LineWidth',2);
-%     plot([892 892]/ppcm, ylim,'b','LineWidth',2);
+    plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
+    plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
+%     set ( gca, 'xdir', 'reverse' )
+    a(2*i-1) = subplot(N,2,2*i-1);
+    hold on
+    plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
+    plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
 end
 
 toc
@@ -279,5 +307,5 @@ set(gcf, 'Position', [100 100 1000 200+100*N]);
 linkaxes(a,'x')
 zoom xon
 xlim([0 xmax])
-sgtitle('Directional Ratemap (velocity filtered)');
+sgtitle(['Directional Ratemap (velocity filtered: v > ' num2str(v_thresh) ' cm/s)']);
 saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.png']))

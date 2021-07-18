@@ -58,7 +58,7 @@ for l=1:length(lap)
     ylabel('Theta (\muV)')
     t_idx = (timecsc > lap(l).t_jump_exact - 2) & (timecsc < lap(l).t_jump_exact + 2); % 2 sec before and 2 sec after
 
-    
+    size(lfp(t_idx))
     lfp_all(i,:) = lfp(t_idx)';
     t_lfp_ave = timecsc(t_idx) - lap(l).t_jump_exact;
     box on
