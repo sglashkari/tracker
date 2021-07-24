@@ -1,3 +1,4 @@
+#!/bin/bash
 if [[ "$1" != "" ]];
 then
 	DIR="$1"
@@ -6,8 +7,8 @@ else
 	DIR=$(pwd)
 fi
 echo $DIR
-raw_files=$(ls $DIR | grep "raw")
 non_raw_file=$(ls $DIR | grep "jpg")
+raw_files=$(ls $DIR | grep "raw")
 file_info=$(identify "${DIR}/${non_raw_file}")
 size=$(echo ${file_info} | cut -d " " -f 3)
 echo "Size = $size"
