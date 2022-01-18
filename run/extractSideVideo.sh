@@ -16,6 +16,6 @@ for f in *.raw; do
 	printf '%d%%\n' $((counter*100/max_no))
 done
 
-ffmpeg -framerate 20 -i frame-%d.pgm -crf 18 -pix_fmt gray -r 20 "video-crf18.mp4"
+ffmpeg -framerate 20 -i frame-%d.pgm -crf 18 -pix_fmt gray -preset veryslow -r 20 "side_video_crf18.mp4"
 
-du -h video-crf18.mp4
+du -h "side_video_crf18.mp4"
