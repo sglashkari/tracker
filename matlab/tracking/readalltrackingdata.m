@@ -55,7 +55,6 @@ flag = [Samples.flag]';
 frame_no = [Samples.frame]';
 time = [Samples.time]'; % seconds (wrapped)
 t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
-idx = x~=-1;
 
 %
 figure(2)
