@@ -5,12 +5,11 @@
 %   SGL 2021-01-31
 %
 clc; close all
-exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
-[datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
+[datafile,exp_directory] = uigetfile(fullfile('D:\Analysis', 'data.mat'), 'Select Data File');
 if isequal(datafile, 0)
     error('Data file was not selected!')
 end
-addpath('../jumping');
+%addpath('../jumping');
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'lap');
 l = 9;

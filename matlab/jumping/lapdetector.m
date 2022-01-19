@@ -5,7 +5,7 @@ function [lap, idx_analysis] = lapdetector(exp_directory, xmax, mode, time_of_an
 %  Inputs:
 %       (1) Experiment Directory
 %       (2) Length of image (in cm)
-%       (3) Mode of Lap detection
+%       (3) Mode of Lap detection: mode 1 (the whole lap); mode 2 (2 sec before to 2 sec after)
 %       (4) Time Analysis 2xN [Initial Final]
 %               e.g. [1 2; 3 4; 5 6; 7 8]
 %
@@ -28,16 +28,15 @@ function [lap, idx_analysis] = lapdetector(exp_directory, xmax, mode, time_of_an
 %       All inputs and outputs:
 %           [lap, idx_analysis] = lapdetector(exp_directory, xmax, mode, time_of_analysis)
 %
-%   See also WINCLUST2MAT.
+%   See also WINCLUST2MAT, ANALYZEDATA.
 %
-%   SGL 2021-01-31 updated 2021-03-28
+%   SGL 2022-01-17 (originally 2021-01-31, 2021-03-28)
 %
 clc; close all
 
 %% Variable-length input argument parsing
 if nargin < 1
-    exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
-    [~,exp_directory] = uigetfile(fullfile(exp_directory, 'data.mat'), 'Select Data File');
+    [~,exp_directory] = uigetfile(fullfile('D:\Analysis', 'data.mat'), 'Select Data File');
 end
 
 mat_filename = fullfile(exp_directory, 'data.mat');
@@ -49,29 +48,20 @@ else
 end
 
 if nargin < 2
-    [img_file,img_directory] = uigetfile(fullfile(exp_directory,'Videos','*.pgm'), 'Select Image File');
-    if isequal(img_file, 0)
-        error('Image file was not selected!')
-    end
-    img_filename = fullfile(img_directory, img_file);
-    img = imread(img_filename);
-    xmax = ceil(size(img,2)/ppcm);
+    xmax = 2048/ppcm;
 end
 
 if nargin < 3
-    mode = 1;
+    mode = 2;
 end
     
 %% Plotting the position vs time and marking neural recording times,
 
 %% time detection: recording, maze, and analysis
 
-event_filename = fullfile(exp_directory, 'Neuralynx', 'Events.nev');
-[Time,Data,Header,EventIDs,TTLs] = readevent(event_filename);
-
 % time of recording
-tri = Time(string(Data)=='Starting Recording'); % time of recording (initial)
-trf = Time(string(Data)=='Stopping Recording'); % time of recording (final)
+tri = 0;                    % time of recording (initial)
+trf = seconds(exp.finish-exp.start); % time of recording (final)
 
 hold on
 for i=1:length(tri)
@@ -79,17 +69,8 @@ for i=1:length(tri)
 end
 
 % time of maze
-mi = Data(contains(string(Data),"start",'IgnoreCase',true) & (EventIDs==4)');
-if ~isempty(mi) % when mazes have start and stop
-    tmi = Time(contains(string(Data),"start",'IgnoreCase',true) & (EventIDs==4)'); % time of maze initial
-    tmf = Time(contains(string(Data),"stop",'IgnoreCase',true) & (EventIDs==4)'); % time of maze final
-    mf = Data(contains(string(Data),"stop",'IgnoreCase',true) & (EventIDs==4)');
-else % when mazes don't have start and stop
-    tmi = Time(EventIDs==4); % time of maze initial
-    mi = Data(EventIDs==4);
-    tmf = Time(find(EventIDs==4) + 1); % time of maze final
-    mf = Data(find(EventIDs==4) + 1);
-end
+tmi = pos.t(1); % tri % time of maze initial
+tmf = pos.t(end); % trf % time of maze final
 
 for i=1:length(tmi)
     rectangle('Position',[tmi(i),0,tmf(i)-tmi(i),xmax],'FaceColor',[0 .8 .8])
@@ -97,14 +78,8 @@ end
 
 % time of analysis
 if nargin < 4
-    switch exp.date
-        case '22-Nov-2020'
-            tai = tri(3:end); % DAY 3
-            taf = trf(3:end); % DAY 3
-        otherwise
-            tai = tri(1:end);
-            taf = trf(1:end);
-    end
+    tai = 15;%tmi;
+    taf = 1000;%tmf;
 else
     tai = time_of_analysis(:,1);
     taf = time_of_analysis(:,2);
@@ -130,16 +105,10 @@ ylim([0 xmax])
 %% jump detection
 
 % criterion
-criterion = abs(vx) > 200;
-plot(t,200*criterion,'-r')
-
-switch exp.date 
-    case '11-Nov-2020'
-        x_thresh = 82;
-    otherwise
-        x_thresh = 84;
-end
-dx = x - x_thresh;
+% criterion = abs(vx) > 200;
+% plot(t,abs(vx),'-r')
+x_thresh = 138; %132, 145
+%dx = x - x_thresh;
 
 % times that the rats jump (based on jump direction)
 jump_criteria_lefttward = (diff(x > x_thresh) == -1) & (abs(diff(x)) < 10) & (vx(2:end) < -100); % multiple criterion
@@ -197,7 +166,7 @@ for i=1:N-1
         if mode == 1
             lap(l).t = [time_extreme(i) time_extreme(i+1)]; % from min to max or vice versa
         else
-            lap(l).t = [lap(l).t_jump-2 lap(l).t_jump+2]; % from 2 sec before to 1 sec after
+            lap(l).t = [lap(l).t_jump-2 lap(l).t_jump+2]; % from 2 sec before to 2 sec after
         end
         l = l+1;
     end
@@ -213,7 +182,7 @@ for i=1:N-1
         if mode == 1
             lap(l).t = [time_extreme(i) time_extreme(i+1)]; % from min to max or vice versa
         else
-            lap(l).t = [lap(l).t_jump-2 lap(l).t_jump+2]; % from 1 sec before to 1 sec after
+            lap(l).t = [lap(l).t_jump-2 lap(l).t_jump+2]; % from 2 sec before to 2 sec after
         end
         l = l+1;
     end
@@ -233,7 +202,7 @@ for l=1:length(lap)
     plot(t(idx),x(idx),color)
 end
 
-set(gcf, 'Position', [100 100 2000 1500]);
+set(gcf, 'Position', [50 50 2300 1300]);
 
 %% save file if the functiona in called, otherwise display the info
 if nargout ~= 0
@@ -244,20 +213,15 @@ if nargout ~= 0
     saveas(gcf,fullfile(analysis_directory,'overall_view.svg'));
 else
     format longG
-    disp(["Time              Data"]);
-    disp([Time string(Data)]);
     disp('Frame numbers: ')
     for l=1:length(lap)
         fprintf('%d,',lap(l).frame);
     end
-    disp('\n')
+    fprintf('\n')
     fprintf('Maze Times: \n')
-    disp([tmi string(mi) tmf string(mf)])
+    disp([tmi tmf])
     fprintf('Analysis Times: \n')
     disp([tai taf])
-    figure(2)
-    plot(t,vx)
-    clear lap;
 end
 
 end
