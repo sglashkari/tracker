@@ -1,23 +1,22 @@
 % SGL 2021-01-31 (test3_present + rate map)
 clc; clear;
-addpath('../jumping');
-exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
+exp_directory = 'D:\Analysis\2021-12-10';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'offset', 'colors','xmax','hist');
 %colors(35) = "#00CCCC";
-colors(16) = "red";
-x_thresh = 84;
+%colors(16) = "red";
+x_thresh = 138;
 v_thresh = 0;
 
 %lap_no = 10;
 cluster_no = [25 35 37];
 cluster_no = [6 23 16];
-% cluster_no = 37;
+cluster_no = 53;
 % cluster_no = 11;
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 
 direction = 'right';
-direction = 'left'; 
+%direction = 'left'; 
 N = nnz([lap.dir]==direction);
 isCSC = 1;
 
@@ -34,7 +33,7 @@ pos.filt.ay = gradient(pos.filt.vy)./gradient(pos.t); % ax in cm/sec
 
 for l =1:length(lap)
     % detect the more exact time of jump
-    idx = (pos.t>lap(l).t_jump-0.6) & (pos.t<lap(l).t_jump+0.4) & (pos.filt.s>40);
+    idx = (pos.t>lap(l).t_jump-0.6) & (pos.t<lap(l).t_jump+0.4) & (pos.filt.s>150);
     idx = find(idx,1);
     lap(l).t_jump_exact = pos.t(idx);
     lap(l).t_jump = lap(l).t_jump_exact; % replacing with time of jump exact
@@ -43,70 +42,73 @@ end
 tic
 
 %% CSC
-% csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
-% for l=1:length(lap)
-%     if lap(l).dir~=direction || ~isCSC % filtering out undesired direction
-%         continue;
+%csc_filename= fullfile(exp_directory,'Neuralynx','CSC12.ncs');
+csc_filename=fullfile(exp_directory, 'CA1-Shank4','Theta32.ncs'); % use plotcsc to optimize it
+[time,data] = read_bin_csc(csc_filename);
+for l=[lap([lap.dir]==direction).no]  % only the desired direction
+    if ~isCSC
+        break;
+    end
+    figure(100+l); clf
+    
+    idx = time >= lap(l).t(1) & time <= lap(l).t(2);
+    timecsc = time(idx);
+    lfp = data(idx);
+    [theta, phase] = filtertheta(timecsc,lfp);
+    
+    idx = cros;
+    ax1 = subplot(4,1,1); hold on
+    plot(pos.t(idx)-lap(l).t_jump,pos.x(idx));
+    ylabel('Horizontal position (cm)')
+    title(['lap ' num2str(l) ' - ' direction 'ward']);
+
+    
+    ax2 = subplot(4,1,2); hold on;
+    plot(pos.t(idx)-lap(l).t_jump,pos.filt.vx(idx),'m');
+    ylabel('Horizontal Velocity (cm/s)')
+    ylim([-50 300])
+
+    % plot a line for every time the rat cross the edges
+    for i=1:length(lap(l).t_cross)
+        plot(repmat(lap(l).t_cross(i),1,2)-lap(l).t_jump, ylim,'b','LineWidth',2);
+    end
+    
+    ax3 = subplot(4,1,3); hold on
+    plot(timecsc-lap(l).t_jump,phase)
+    % theta phase
+    for c=cluster_no
+        idx = [cluster(c).lap]==l;
+        if nnz(idx) > 0 % if there a firing for one of cluster_no in this lap
+            plot(cluster(c).t(idx)-lap(l).t_jump, cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
+        end
+    end
+    legend([{'Theta Phase'};legendCell])
+    ylim([-180 180])
+    ylabel('Phase (Degrees)')
+    
+    ax4 = subplot(4,1,4);
+    plot(timecsc-lap(l).t_jump,lfp * 1e6,'Color','#D0D0D0')
+    hold on;
+    plot(timecsc-lap(l).t_jump,theta *1e6,'r');
+    ylim([-400 400])
+    ylabel('Theta (\muV)')
+    xlabel('Time (sec)')
+    
+    linkaxes([ax1 ax2 ax3 ax4],'x')
+    xlim([-2 2])
+    
+    set(gcf, 'Position', [100 100 1536 1175]);
+    saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
+%     if length(cluster_no) == 1
+%         
+%     else
+%         mat2str(cluster_no)
+%         
+%         saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction 'ward-lap_' num2str(l) '.svg']))
 %     end
-%     figure(100+l); 
-%     [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
-%     [theta, phase] = filtertheta(timecsc,lfp);
-%     
-%     idx = pos.lap==l;
-%     ax1 = subplot(4,1,1); hold on
-%     plot(pos.t(idx)-lap(l).t_jump,pos.x(idx));
-%     ylabel('Horizontal position (cm)')
-%     title(['lap ' num2str(l) ' - ' direction 'ward']);
-% 
-%     
-%     ax2 = subplot(4,1,2); hold on;
-%     plot(pos.t(idx)-lap(l).t_jump,pos.filt.s(idx),'m');
-%     ylabel('Speed (cm/s)')
-%     ylim([0 300])
-%     % range of gap:
-%     gapidx = pos.x(idx)>lap(l).gap(1) & pos.x(idx)<=lap(l).gap(2);
-%     gapidx = [0; diff(gapidx)];
-%     post = pos.t(idx);
-%     plot(repmat(post(find(gapidx,1)),1,2)-lap(l).t_jump, ylim,'b','LineWidth',2);
-%     plot(repmat(post(find(gapidx,2)),1,2)-lap(l).t_jump, ylim,'b','LineWidth',2);
-%     
-%     
-%     ax3 = subplot(4,1,3); hold on
-%     plot(timecsc-lap(l).t_jump,phase)
-%     % theta phase
-%     for c=cluster_no
-%         idx = [cluster(c).lap]==l;
-%         if nnz(idx) > 0 % if there a firing for one of cluster_no in this lap
-%             plot(cluster(c).t(idx)-lap(l).t_jump, cluster(c).phase(idx),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
-%         end
-%     end
-%     legend([{'Theta Phase'};legendCell])
-%     ylim([-180 180])
-%     ylabel('Phase (Degrees)')
-%     
-%     ax4 = subplot(4,1,4);
-%     plot(timecsc-lap(l).t_jump,lfp * 1e6,'Color','#D0D0D0')
-%     hold on;
-%     plot(timecsc-lap(l).t_jump,theta *1e6,'r');
-%     ylim([-400 400])
-%     ylabel('Theta (\muV)')
-%     xlabel('Time (sec)')
-%     
-%     linkaxes([ax1 ax2 ax3 ax4],'x')
-%     xlim([-2 2])
-%     
-%     set(gcf, 'Position', [100 100 1536 1175]);
-%     saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
-% %     if length(cluster_no) == 1
-% %         
-% %     else
-% %         mat2str(cluster_no)
-% %         
-% %         saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction 'ward-lap_' num2str(l) '.svg']))
-% %     end
-%     
-% end
-% toc
+    
+end
+toc
 %% Phase Plots
 flag1 = 0;
 flag2 = 0;
@@ -212,12 +214,13 @@ for c = cluster_no
         title(['cluster ' num2str(c) ' lap ' num2str(l)])
         
         % range of gap:
-        idx = pos.lap==l;
-        gapidx = pos.x(idx)>lap(l).gap(1) & pos.x(idx)<=lap(l).gap(2);
-        gapidx = [0; diff(gapidx)];
-        post = pos.t(idx);
-        plot(repmat(post(find(gapidx,1)),1,2)-lap(l).t_jump, [-180 540],'b','LineWidth',0.25);
-        plot(repmat(post(find(gapidx,2)),1,2)-lap(l).t_jump, [-180 540],'b','LineWidth',0.25);
+%         idx = pos.lap==l;
+%         gapidx = pos.x(idx)>lap(l).gap(1) & pos.x(idx)<=lap(l).gap(2);
+%         gapidx = [0; diff(gapidx)];
+%         post = pos.t(idx);
+        for i=1:length(lap(l).t_cross)
+            plot(repmat(lap(l).t_cross(i),1,2)-lap(l).t_jump, [-180 540],'b','LineWidth',0.25);
+        end
     
     end
     title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward'])

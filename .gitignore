@@ -82,3 +82,11 @@
 *.wav
 *.mp3
 *.wma
+
+
+# TEMP FILES
+noah_hist_correction.m
+phase_hist_7.m
+test_1.m
+tmp*
+
