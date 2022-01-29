@@ -1,12 +1,16 @@
 #!/bin/bash
 ~/test/run/raw2order.sh
-sleep 2
 
-if  [[$# -eq 1]]; then
+if  [[ $# -eq 0 ]]
+then
 	size="1200x700"
+	
 else
 	size=$1
 fi
+
+echo "size is $size"
+sleep 2
 
 max_no=$(ls | sed -e '/raw/!d' | wc -l);
 max_no=$((max_no-1))

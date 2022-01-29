@@ -24,14 +24,18 @@ m = memmapfile(Filename,'Format',format);
 fclose(FileID);
 
 Samples = m.Data;
-x = [Samples.x]';
-l_side = 0.0308 * x - 17.114;
+xr = [Samples.x]';
+xl = [Samples.y]';
+l_side = (0.0308 * xr - 17.114 - (0.0308 * xl - 4.4788)) * 2.54; % inch to cm
 frame_no_side = [Samples.frame]';
-l_side = movmedian(l_side,20); % length of ditch
 
-% figure
-figure(1);
-plot(frame_no_side,l_side);
+figure(1); clf;
+%plot(frame_no_side,l_side); hold on
+l_side = movmedian(l_side,2000); % length of ditch
+hold on
+plot(frame_no_side,l_side,'r');
+hold on
+plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,2000),'g');
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -59,6 +63,8 @@ t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
 %
 figure(2)
 plot(t,x,'.')
+hold on
+plot(t(flag==0 & x>-1),x(flag==0 & x>-1),'or');
 figure(3)
 plot(x,y,'.')
 axis equal
@@ -93,6 +99,9 @@ plot(frame_no,P.trans_mark_wrt_base_x,'.r')
 %%
 T = table(frame_no,t,flag,x,y,ditch_length, success, pos, rot);
 fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
+if max(flag == 1)
+    fprintf('Accuracy of high confidence 2D tracking is %.2f%%\n',100*sum(flag>0)/length(t))
+end
 fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
 Filename = fullfile(path,'..','full-tracking.csv');
 writetable(T,Filename,'Delimiter',',')
@@ -100,3 +109,5 @@ writetable(T,Filename,'Delimiter',',')
 %% 
 T = readtable(Filename);
 head(T,10)
+figure(6); clf
+plot(T.t,T.ditch_length)

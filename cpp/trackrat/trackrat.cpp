@@ -175,7 +175,7 @@ int main(int argc, char** argv)
                     return 1;
                 } else {
                     cerr << "Could not read the image: " << filename << endl;
-                    cerr << "\nProgram aborted!\n" << endl;
+                    cout << "Finished!" << endl;
                     break;
                 }
             }
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
             }
             //cout << "-1! " << (keypoints[largest_idx].size < 9.5 && keypoints[largest_idx].pt.x >  800 && keypoints[largest_idx].pt.x < 1200 ) << endl;
-            if (keypoints[largest_idx].size < 9 && keypoints[largest_idx].pt.x >  800 && keypoints[largest_idx].pt.x < 1300 ){ // Jan 2, 2022 size (especially in ditch)
+            if (keypoints[largest_idx].size < 9 && keypoints[largest_idx].pt.x >  750 && keypoints[largest_idx].pt.x < 1300 ){ // Jan 2, 2022 size (especially in ditch)
                 if (no_markers == 3){
                     center_x = (keypoints[0].pt.x + keypoints[1].pt.x + keypoints[2].pt.x)/3;
                     center_y = (keypoints[0].pt.y + keypoints[1].pt.y + keypoints[2].pt.y)/3;

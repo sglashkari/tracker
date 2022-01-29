@@ -11,11 +11,17 @@
 #include <chrono> // time, chrono
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
-#include <algorithm>    // std::max
+#include <algorithm>    // std::max, std::sort
 
 using namespace cv;
 using namespace std;
 //! [includes]
+
+bool response_comparator(const cv::KeyPoint& first, const cv::KeyPoint& second)
+{
+  if (first.pt.x < second.pt.x) return true;
+  else return false;
+}
 
 // function to convert decimal to binary 
 vector<int> decToBinary(int n) 
@@ -140,9 +146,8 @@ int main(int argc, char** argv)
     ifstream rawimagefile;
 
     Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped;
-    float x = -1, y = -1;
+    float xr = -1, xl = -1, xrc = col;
     int flag = 0, failure = 0;
-    double last_time;
     
     int fps = 30;
     VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row),false); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4') // false for grayscale (isColor)
@@ -210,6 +215,7 @@ int main(int argc, char** argv)
         if (imageCnt == 0){
             vector<int> RoiOffset = readRoiOffset(image);
         }
+
         cout << filename << endl;
         // printing out the values
         printf("time = %3.6f, gpio = ",time);
@@ -219,7 +225,8 @@ int main(int argc, char** argv)
         cout << endl;
 
         //crop image to the region of interest (ROI): dynamic size
-        image_cropped = image;
+        Rect roi(0, 0, col, 300);
+        image_cropped = image(roi);
 
         // make binary image (see trackled.cpp)
         int threshold_value = 50;
@@ -252,7 +259,7 @@ int main(int argc, char** argv)
 
         // Filter by Inertia
         params.filterByInertia = true;
-        params.minInertiaRatio = 0.7;
+        params.minInertiaRatio = 0.5;
 
 
         // Storage for blobs
@@ -261,20 +268,25 @@ int main(int argc, char** argv)
         // Set up detector with params
         Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
 
-        int largest_idx=0;
+        int right_nail_idx=2, left_nail_idx=1;
         // Detect blobs
         if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
             detector->detect( image_bin, keypoints);
+            std::sort(keypoints.begin(),keypoints.end(),response_comparator); // sorting
 
-            for (int i=0;i<keypoints.size();i++){
+            for (int i=0;i<keypoints.size();i++)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
-                if (keypoints[largest_idx].pt.x>keypoints[i].pt.x || keypoints[largest_idx].pt.x < 700 ) { // 2021-12-09 detecting the largest marker
-                    largest_idx = i;
+
+            for (int i=3;i<keypoints.size();i++){
+                if (keypoints[right_nail_idx].pt.y > (keypoints[0].pt.y + 10) || keypoints[right_nail_idx].pt.y < (keypoints[0].pt.y - 30)  || keypoints[right_nail_idx].pt.x < (xr - 50)) { // 2021-12-09 detecting the largest marker
+                    right_nail_idx = i;
                 } 
 
             }
-            
-            flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
+            if (keypoints[right_nail_idx].pt.x > (xrc + 50))
+                flag = 0;
+            else
+                flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
         } else {
             flag = 0;
         }
@@ -283,49 +295,50 @@ int main(int argc, char** argv)
 
         // write data to file 
         if (!flag){
-            x = -1;
-            y = -1;
             failure++;
         } else {
             for (int i=0;i<keypoints.size();i++){
-                if (i!=largest_idx){
+                if (i!=right_nail_idx && i!=left_nail_idx){
                     keypoints[i].size = 0;
-                } else {
-                    x = (float) keypoints[largest_idx].pt.x;
-                    y = (float) keypoints[largest_idx].pt.y;
                 }
             }
-            last_time = time;
+            xr = (float) keypoints[right_nail_idx].pt.x;
+            xl = (float) keypoints[left_nail_idx].pt.x;
+            xrc = xr;
+
+            // Draw detected blobs as red circles.
+            // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
+            // the size of the circle corresponds to the size of blob
+            drawKeypoints(image_circle, keypoints, image_circle, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+            keypoints[left_nail_idx].size = 0;
+            drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
         }
 
+        cout << "right = " << xr << ", left = " << xl << endl;
         data_file.write((char*) &imageCnt, sizeof(int));
         data_file.write((char*) &flag, sizeof(int));
         data_file.write((char*) &time, sizeof(double));
         data_file.write((char*) &gpio[0], 4 * sizeof(int));
-        data_file.write((char*) &x, sizeof(float));
-        data_file.write((char*) &y, sizeof(float));
-
-        // Draw detected blobs as red circles.
-        // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
-        // the size of the circle corresponds to the size of blob
-        drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        data_file.write((char*) &xr, sizeof(float));
+        data_file.write((char*) &xl, sizeof(float));
 
         video1.write(image);
         video2.write(image_circle);
-
         // Show blobs
-        imshow("keypoints", image_circle );
-        /*if (!flag) {
-            imshow("binary image", image_bin);
-            waitKey(1);
+
+        if (imageCnt % 10 == 0){
+            //imshow("binary image", image_bin);
+            //imshow("cropped image", image_cropped);
+            imshow("keypoints", image_circle );
+            int k = waitKey(1);
+            if (k == 27) {
+                cout << "\n User aborted the program!\n" << endl;
+                return 0; // Esc key pressed
+            }
         }
-        */
-        int k = waitKey(1);
-        if (k == 27) {
-            cout << "\n User aborted the program!\n" << endl;
-            return 0; // Esc key pressed
-        }
-        imageCnt += 30; // every 30 frames
+        imageCnt++;
     }
 
     video1.release();
