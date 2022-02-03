@@ -21,6 +21,7 @@ for f in *.raw; do
 done
 
 ffmpeg -framerate 30 -i frame-%d.pgm -crf 0 -pix_fmt gray -preset veryslow -r 30 "lossless-video.mp4"
+du -h "lossless-video.mp4"
 
 pose="../pose.csv"
 if [ ! -f "$pose" ]; then

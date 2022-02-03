@@ -31,11 +31,11 @@ frame_no_side = [Samples.frame]';
 
 figure(1); clf;
 %plot(frame_no_side,l_side); hold on
-l_side = movmedian(l_side,2000); % length of ditch
+l_side = movmedian(l_side,1000); % length of ditch
 hold on
 plot(frame_no_side,l_side,'r');
 hold on
-plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,2000),'g');
+plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,1000),'g');
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -84,17 +84,28 @@ ditch_length = round(interp1(t_side,l_side,t,'linear','extrap'),2);
 
 %% Pose
 Filename = fullfile(path,'..','pose.csv');
-P = readtable(Filename);
-head(P,10)
-pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
-rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
-success = P.success_code;
-% figure
-figure(5)
-yyaxis left
-plot(frame_no,x,'.b')
-yyaxis right
-plot(frame_no,P.trans_mark_wrt_base_x,'.r')
+if isfile(Filename)
+    P = readtable(Filename);
+    if height(P)~=length(t)
+        disp([Filename ' does not have the right number of elements!'])
+        return;
+    end
+    head(P,10)
+    pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
+    rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
+    success = P.success_code;
+    % figure
+    figure(5)
+    ax1 = subplot(2,1,1);
+    plot(frame_no,x,'.b')
+    ax2 = subplot(2,1,2);
+    plot(frame_no,P.trans_mark_wrt_base_x,'.r')
+    linkaxes([ax1 ax2],'x');
+else
+    pos = zeros(length(t),3);
+    rot = [zeros(length(t),3) ones(length(t),1)];
+    disp([Filename ' does not exist!'])
+end
 
 %%
 T = table(frame_no,t,flag,x,y,ditch_length, success, pos, rot);
@@ -102,12 +113,9 @@ fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
 if max(flag == 1)
     fprintf('Accuracy of high confidence 2D tracking is %.2f%%\n',100*sum(flag>0)/length(t))
 end
-fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
 Filename = fullfile(path,'..','full-tracking.csv');
 writetable(T,Filename,'Delimiter',',')
 
 %% 
 T = readtable(Filename);
 head(T,10)
-figure(6); clf
-plot(T.t,T.ditch_length)

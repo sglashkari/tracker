@@ -222,53 +222,53 @@ int main(int argc, char** argv)
         for (int j = 0; j < 4; j++) 
           cout << gpio[j];
 
-        cout << endl;
+      cout << endl;
 
         //crop image to the region of interest (ROI): dynamic size
-        Rect roi(0, 0, col, 300);
-        image_cropped = image(roi);
+      Rect roi(0, 0, col, 300);
+      image_cropped = image(roi);
 
         // make binary image (see trackled.cpp)
-        int threshold_value = 50;
-        int threshold_type = 0;
-        int const max_binary_value = 255;
+      int threshold_value = 50;
+      int threshold_type = 0;
+      int const max_binary_value = 255;
 
-        threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
+      threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
 
 
         // rat detection (see blob.cpp)
         // Setup SimpleBlobDetector parameters.
-        SimpleBlobDetector::Params params;
+      SimpleBlobDetector::Params params;
 
         // Change thresholds
-        params.minThreshold = 30;
-        params.maxThreshold = 100;
+      params.minThreshold = 30;
+      params.maxThreshold = 100;
 
         // Filter by Area.
-        params.filterByArea = true;
-        params.minArea = 30;
-        params.maxArea = 70;
+      params.filterByArea = true;
+      params.minArea = 30;
+      params.maxArea = 70;
 
         // Filter by Circularity
-        params.filterByCircularity = true;
-        params.minCircularity = 0.75;
+      params.filterByCircularity = true;
+      params.minCircularity = 0.75;
 
         // Filter by Convexity
-        params.filterByConvexity = true;
-        params.minConvexity = 0.6;
+      params.filterByConvexity = true;
+      params.minConvexity = 0.6;
 
         // Filter by Inertia
-        params.filterByInertia = true;
-        params.minInertiaRatio = 0.5;
+      params.filterByInertia = true;
+      params.minInertiaRatio = 0.5;
 
 
         // Storage for blobs
-        vector<KeyPoint> keypoints;
+      vector<KeyPoint> keypoints;
 
         // Set up detector with params
-        Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
+      Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
 
-        int right_nail_idx=2, left_nail_idx=1;
+      int right_nail_idx=2, left_nail_idx=1;
         // Detect blobs
         if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
             detector->detect( image_bin, keypoints);
@@ -287,6 +287,12 @@ int main(int argc, char** argv)
                 flag = 0;
             else
                 flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
+
+            if (keypoints[left_nail_idx].pt.x > col/2){
+                flag = 0;
+            }
+
+
         } else {
             flag = 0;
         }
@@ -304,7 +310,12 @@ int main(int argc, char** argv)
             }
             xr = (float) keypoints[right_nail_idx].pt.x;
             xl = (float) keypoints[left_nail_idx].pt.x;
-            xrc = xr;
+
+            if (xr > col/2) 
+                xrc = xr;
+            else
+                xrc = col;
+            
 
             // Draw detected blobs as red circles.
             // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
@@ -313,8 +324,8 @@ int main(int argc, char** argv)
 
             keypoints[left_nail_idx].size = 0;
             drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
         }
+        
 
         cout << "right = " << xr << ", left = " << xl << endl;
         data_file.write((char*) &imageCnt, sizeof(int));

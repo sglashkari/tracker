@@ -52,7 +52,7 @@ fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
 if max(flag == 1)
     fprintf('Accuracy of high confidence 2D tracking is %.2f%%\n',100*sum(flag>0)/length(t))
 end
-Filename = fullfile(path,'..','full-tracking.csv');
+Filename = fullfile(path,'..','top-tracking.csv');
 writetable(T,Filename,'Delimiter',',')
 
 %% Pose
@@ -78,13 +78,13 @@ if isfile(Filename)
     % with pose
     T = [T table(success, pos, rot)];
     fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
-    Filename = fullfile(path,'..','full-tracking.csv');
+    Filename = fullfile(path,'..','top-tracking.csv');
     writetable(T,Filename,'Delimiter',',')
 else
     disp([Filename ' does not exist!'])
 end
 
 %%
-Filename = fullfile(path,'..','full-tracking.csv');
+Filename = fullfile(path,'..','top-tracking.csv');
 T = readtable(Filename);
 head(T,10)
