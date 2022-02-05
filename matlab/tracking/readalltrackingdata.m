@@ -20,7 +20,7 @@ format(:,1) = {'uint32';'uint32';'double'; 'uint32'; 'uint32'; 'uint32'; 'uint32
 format(:,2) = mat2cell(ones(9,2),ones(1,9));
 format(:,3) = split('frame,flag,time,p1,p2,p3,p4,x,y',",");
 
-m = memmapfile(Filename,'Format',format); 
+m = memmapfile(Filename,'Format',format);
 fclose(FileID);
 
 Samples = m.Data;
@@ -31,11 +31,11 @@ frame_no_side = [Samples.frame]';
 
 figure(1); clf;
 %plot(frame_no_side,l_side); hold on
-l_side = movmedian(l_side,1000); % length of ditch
+l_side = movmedian(l_side,length(l_side)); % length of ditch
 hold on
 plot(frame_no_side,l_side,'r');
 hold on
-plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,1000),'g');
+plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,length(l_side)),'g');
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -44,7 +44,7 @@ if ~isfile(Filename)
     return;
 end
 FileID = fopen(Filename,'r');
-m = memmapfile(Filename,'Format',format); 
+m = memmapfile(Filename,'Format',format);
 fclose(FileID);
 
 Samples = m.Data;
@@ -88,19 +88,22 @@ if isfile(Filename)
     P = readtable(Filename);
     if height(P)~=length(t)
         disp([Filename ' does not have the right number of elements!'])
-        return;
+        pos = zeros(length(t),3);
+        rot = [zeros(length(t),3) ones(length(t),1)];
+        success = zeros(length(t),1);
+    else
+        head(P,10)
+        pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
+        rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
+        success = P.success_code;
+        % figure
+        figure(5)
+        ax1 = subplot(2,1,1);
+        plot(frame_no,x,'.b')
+        ax2 = subplot(2,1,2);
+        plot(frame_no,P.trans_mark_wrt_base_x,'.r')
+        linkaxes([ax1 ax2],'x');
     end
-    head(P,10)
-    pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
-    rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
-    success = P.success_code;
-    % figure
-    figure(5)
-    ax1 = subplot(2,1,1);
-    plot(frame_no,x,'.b')
-    ax2 = subplot(2,1,2);
-    plot(frame_no,P.trans_mark_wrt_base_x,'.r')
-    linkaxes([ax1 ax2],'x');
 else
     pos = zeros(length(t),3);
     rot = [zeros(length(t),3) ones(length(t),1)];
@@ -116,6 +119,6 @@ end
 Filename = fullfile(path,'..','full-tracking.csv');
 writetable(T,Filename,'Delimiter',',')
 
-%% 
+%%
 T = readtable(Filename);
 head(T,10)
