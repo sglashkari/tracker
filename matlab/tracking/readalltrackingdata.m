@@ -8,6 +8,7 @@ clc; clear; close all
 
 %% Side View
 [trackingFile,path] = uigetfile('tracking.dat','Select a tracking data file');
+%%
 Filename = fullfile(path,'..','side','tracking.dat');
 if ~isfile(Filename)
     fprintf([Filename ' does not exist!\n']);
@@ -29,13 +30,13 @@ xl = [Samples.y]';
 l_side = (0.0308 * xr - 17.114 - (0.0308 * xl - 4.4788)) * 2.54; % inch to cm
 frame_no_side = [Samples.frame]';
 
-figure(1); clf;
+figure(1); hold on;
 %plot(frame_no_side,l_side); hold on
-l_side = movmedian(l_side,length(l_side)); % length of ditch
+l_side = movmedian(l_side,800); % length of ditch
 hold on
 plot(frame_no_side,l_side,'r');
 hold on
-plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,length(l_side)),'g');
+plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,800),'g');
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -96,6 +97,7 @@ if isfile(Filename)
         pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
         rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
         success = P.success_code;
+        fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
         % figure
         figure(5)
         ax1 = subplot(2,1,1);

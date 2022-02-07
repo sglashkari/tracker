@@ -17,12 +17,6 @@ using namespace cv;
 using namespace std;
 //! [includes]
 
-bool response_comparator(const cv::KeyPoint& first, const cv::KeyPoint& second)
-{
-  if (first.pt.x < second.pt.x) return true;
-  else return false;
-}
-
 // function to convert decimal to binary 
 vector<int> decToBinary(int n) 
 { 
@@ -272,7 +266,10 @@ int main(int argc, char** argv)
         // Detect blobs
         if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
             detector->detect( image_bin, keypoints);
-            std::sort(keypoints.begin(),keypoints.end(),response_comparator); // sorting
+            std::sort(keypoints.begin(),keypoints.end(),    // sorting
+                [](const KeyPoint &first, const KeyPoint &second){
+                    return first.pt.x < second.pt.x;
+                }); 
 
             for (int i=0;i<keypoints.size();i++)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
