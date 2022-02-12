@@ -6,16 +6,24 @@
 %
 clc; clear; close all
 
-[csc_filename,csc_directory] = uigetfile('D:\Analysis\*.ncs','Select One or More CSC Files','MultiSelect','on');
-if isa(csc_filename,'double')
-    return;
-elseif isa(csc_filename,'char')
-    csc_filename = {csc_filename};
+% [csc_filename,csc_directory] = uigetfile('D:\Analysis\*.ncs','Select One or More CSC Files','MultiSelect','on');
+% if isa(csc_filename,'double')
+%     return;
+% elseif isa(csc_filename,'char')
+%     csc_filename = {csc_filename};
+% end
+exp_directory = 'D:\Analysis\2021-12-10';
+csc_filename = cell(4,1);
+for sh=1:4
+    csc_filename{sh}=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP32.ncs'); % use plotcsc to optimize it
 end
-csc_filename = fullfile(csc_directory, csc_filename);
 
 for ch=1:length(csc_filename)
     [timecsc,lfp] = read_bin_csc(csc_filename{ch});
+    idx = timecsc >= 100 & timecsc < 200;
+    timecsc = timecsc(idx);
+    lfp = lfp(idx);
+    
     [theta, phase, mag] = filtertheta(timecsc,lfp);
     
     ax1 = subplot(3,1,1);

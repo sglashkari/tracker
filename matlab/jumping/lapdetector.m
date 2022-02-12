@@ -36,7 +36,7 @@ function [lap, idx_analysis] = lapdetector(exp_directory, varargin)
 %
 %   See also WINCLUST2MAT, ANALYZEDATA.
 %
-%   SGL 2022-01-17 (originally 2021-01-31, 2021-03-28)
+%   SGL 2022-02-09 (originally 2021-01-31, 2021-03-28)
 %
 clc; close all
 
@@ -48,29 +48,33 @@ end
 mat_filename = fullfile(exp_directory, 'data.mat');
 if isfile(mat_filename)
     clearvars -except mat_filename exp_directory varargin;
-    load(mat_filename, 'pos', 'exp', 'ppcm')
+    load(mat_filename, 'pos', 'exp', 'ppcm','daq')
 else
     error('Data file is not valid!')
 end
 
 xmax = 2048/ppcm;
-mode = []; % the whole lap
+mode = [-inf inf]; % the whole lap
 time_of_analysis = [pos.t(1) pos.t(end)];
 time_exclusion = [];
+%x_thresh = [133 143];
+x_thresh = [133 139];
+
 for argidx = 1:2:nargin-1
     switch varargin{argidx}
         case 'xmax'
             xmax = varargin{argidx+1};
         case 'mode'
             mode = varargin{argidx+1};
-            mode = [-abs(mode(1)) abs(mode(end))]; % e.g. 2 would be [-2 -2] from 2 seconds before to 2 seconds after
         case 'time'
             time_of_analysis = varargin{argidx+1};
         case 'exclude'
             time_exclusion = varargin{argidx+1};
+        case 'thresh'
+            x_thresh = varargin{argidx+1};
     end
 end
-
+mode = [-abs(mode(1)) abs(mode(end))]; % e.g. 2 would be [-2 -2] from 2 seconds before to 2 seconds after
 tai = time_of_analysis(:,1);
 taf = time_of_analysis(:,2);
 
@@ -107,29 +111,35 @@ end
 
 t = pos.t(idx_analysis);
 x = pos.x(idx_analysis);
-y = pos.y(idx_analysis);
 vx = pos.vx(idx_analysis);
-vy = pos.vy(idx_analysis);
-s = pos.s(idx_analysis);
-frame = pos.frame(idx_analysis);
-
+vx = filterlfp(t, vx, 0.01, 2); % cm/sec
+    
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
-
+plot(t,abs(vx))
 %% jump detection
 
-% criterion
-% criterion = abs(vx) > 200;
-% plot(t,abs(vx),'-r')
-x_thresh = 138; %132, 145
-%dx = x - x_thresh;
-
+daq.ditch = double(daq.loadcell(2,:)>1);
+ditch = interp1(daq.t,daq.ditch,t,'linear','extrap');
+ditch = movmax(ditch, [100 0]); % extend the ditch
+plot(t,ditch*xmax)
 % times that the rats jump (based on jump direction)
-jump_criteria_lefttward = (diff(x > x_thresh) == -1) & (abs(diff(x)) < 10) & (vx(2:end) < -100); % multiple criterion
-jump_criteria_rightward = (diff(x > x_thresh) == 1) & (abs(diff(x)) < 10) & (vx(2:end) > 100); % multiple criterion
-time_jump_leftward = t(jump_criteria_lefttward);
+jump_criteria_leftward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx < -40) & (~ditch); % multiple criterion
+jump_criteria_rightward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx > 40) & (~ditch); % multiple criterion
+
+% detecting the first of such chage
+jump_criteria_leftward = diff(jump_criteria_leftward) == 1;
+jump_criteria_rightward = diff(jump_criteria_rightward) == 1;
+
+% removing double detection
+jump_criteria_leftward_sum = movsum(jump_criteria_leftward, [0 500]);
+jump_criteria_rightward_sum = movsum(jump_criteria_leftward, [0 500]);
+jump_criteria_leftward(jump_criteria_leftward_sum > 1) = 0;
+jump_criteria_rightward(jump_criteria_rightward_sum > 1) = 0;
+
+time_jump_leftward = t(jump_criteria_leftward);
 time_jump_rightward = t(jump_criteria_rightward);
-x_jump_leftward = x(jump_criteria_lefttward);
+x_jump_leftward = x(jump_criteria_leftward);
 x_jump_rightward = x(jump_criteria_rightward);
 
 plot(time_jump_leftward, x_jump_leftward, 'hk', 'MarkerSize',15)
@@ -140,23 +150,22 @@ time_jump = sort([time_jump_leftward;time_jump_rightward; tai; taf;taf(end)]); %
 l = 1;
 N = length(time_jump);
 
-for i = 1:2:N-2
+for i = 1:1:N-2
     %lap extremes (max and min)
-    jump_idx_lap = t>=time_jump(i) & t<time_jump(i+2);
+    jump_idx_lap = t>=time_jump(i) & t<time_jump(i+1);
     tl = t(jump_idx_lap);
     [x_right(l), idx] = max(x(jump_idx_lap));
     t_right(l) = tl(idx);
-    
     [x_left(l), idx] = min(x(jump_idx_lap));
     t_left(l) = tl(idx);
     l = l+1;
 end
 
 % ignore extremes in the vicinity of the gap
-t_right(x_right < x_thresh + 15) = [];
-x_right(x_right < x_thresh + 15) = [];
-t_left(x_left > x_thresh - 15) = [];
-x_left(x_left > x_thresh - 15) = [];
+t_right(x_right < x_thresh(2) + 40) = [];
+x_right(x_right < x_thresh(2) + 40) = [];
+t_left(x_left > x_thresh(1) - 40) = [];
+x_left(x_left > x_thresh(1) - 40) = [];
 
 plot(t_right, x_right, 'pk', 'MarkerSize',15)
 plot(t_left, x_left, 'sk', 'MarkerSize',15)
@@ -177,11 +186,9 @@ for i=1:N-1
         lap(l).t_jump = time_jump(time_jump >= time_extreme(i) & time_jump <= time_extreme(i+1));
         lap(l).frame = pos.frame(pos.t==lap(l).t_jump); % frame of jump in the lap
         % time of lap
-        if isempty(mode)
-            lap(l).t = [time_extreme(i) time_extreme(i+1)]; % from min to max or vice versa
-        else
-            lap(l).t = lap(l).t_jump + mode; % from 2 sec before to 2 sec after
-        end
+        % [time_extreme(i) time_extreme(i+1)]; % from min to max or vice versa
+        % [lap(l).t_jump-n lap(l).t_jump+m]; % from n sec before to m sec after
+        lap(l).t = [max(time_extreme(i),lap(l).t_jump + mode(1)) min(time_extreme(i+1),lap(l).t_jump + mode(2))];
         l = l+1;
     end
     % rightward laps
@@ -193,11 +200,7 @@ for i=1:N-1
         lap(l).t_jump = time_jump(time_jump >= time_extreme(i) & time_jump <= time_extreme(i+1));
         lap(l).frame = pos.frame(pos.t==lap(l).t_jump); % frame no of jump in the lap
         % time of lap
-        if isempty(mode)
-            lap(l).t = [time_extreme(i) time_extreme(i+1)]; % from min to max or vice versa
-        else
-            lap(l).t = lap(l).t_jump + mode; % from 2 sec before to 2 sec after
-        end
+        lap(l).t = [max(time_extreme(i),lap(l).t_jump + mode(1)) min(time_extreme(i+1),lap(l).t_jump + mode(2))];
         l = l+1;
     end
 end
@@ -215,9 +218,19 @@ for l=1:length(lap)
     end
     plot(t(idx),x(idx),color)
 end
-
+xlim([tri trf])
 set(gcf, 'Position', [50 50 2300 1300]);
 
+%% Marking laps as jump or ditch
+for l=1:length(lap)
+    idx = t >= lap(l).t_jump+0.4 & t <= lap(l).t_jump+0.6;
+    if mean(ditch(idx))>0.9 % 90% probability ditch
+        lap(l).status = "ditch";
+    else
+        lap(l).status = "jump";
+    end 
+end
+    
 %% save file if the functiona in called, otherwise display the info
 if nargout ~= 0
     analysis_directory = fullfile(exp_directory, 'Analysis');
@@ -227,6 +240,7 @@ if nargout ~= 0
     saveas(gcf,fullfile(analysis_directory,'overall_view.svg'));
 else
     format longG
+    disp(exp.name);
     disp('Frame numbers: ')
     for l=1:length(lap)
         fprintf('%d,',lap(l).frame);

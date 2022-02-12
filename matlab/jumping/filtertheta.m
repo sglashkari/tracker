@@ -3,7 +3,7 @@ function [theta, phase, mag]= filtertheta(t, lfp, wcl, wch)
 % filtertheta(time, signal, lower cutoff frequency, higher cutoff frequency)
 
 if nargin < 2
-    [t, lfp] = readcsc;
+    [t, lfp] = read_bin_csc;
 end
 
 Ts = mean(diff(t));

@@ -14,7 +14,7 @@ function [rhythm, phase, mag]= filterlfp(t, lfp, w, wch)
 %
 
 if nargin < 2
-    [t, lfp] = readcsc;
+    [t, lfp] = read_bin_csc;
 end
 
 Ts = mean(diff(t));
@@ -54,11 +54,13 @@ if nargout == 0
     hold on
     plot(t, rhythm,'r');
     clear rhythm;
-elseif nargout > 1
+end
+if nargout > 1
     z = hilbert(rhythm);
-    phase = angle(z);
-    phase = rad2deg(phase);
+    phase = rad2deg(angle(z)); 
+end
+if nargout > 2
     mag = abs(z);
-end    
+end
     
 end
