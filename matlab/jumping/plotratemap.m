@@ -8,12 +8,12 @@ end
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename, 'pos', 'posi', 'lap', 'cluster','ppcm', 'colors','xmax','hist');
 start = tic;
-cluster_no = [1 2]; % [cluster.no] for all
-lapbylap = false;
+cluster_no =[3 13 17 18 22 23 28 29 31]; %[cluster.no];
+showlapbylap = true;
 %% Plotting the spikes on the path
 
 for l = 1:length(lap)
-    if ~lapbylap
+    if ~showlapbylap
         break;
     end
     % Figures of the rat in the mid-jump
@@ -40,9 +40,8 @@ for l = 1:length(lap)
         ax1 = subplot(5,1,1:2);
         h = plot(cluster(c).x([cluster(c).lap]==l) * ppcm, cluster(c).y([cluster(c).lap]==l) * ppcm,...
             'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c));
-        
-        title([num2str(cluster(c).region) ': Cluster no. ' num2str(c) ', Lap no. ' num2str(lap(l).no) ', ' ... 
-            cluster(c).name ], 'Interpreter', 'none');
+        title([cluster(c).region ': cluster no. ' num2str(c) ', lap ' num2str(l) ', ' ...
+            convertStringsToChars(lap(l).dir) 'ward ' convertStringsToChars(lap(l).status)], 'Interpreter', 'none');
         
         % spike histogram
         ax3 = subplot(5,1,4);
@@ -125,4 +124,3 @@ for i = 1:ceil(length(cluster)/14)
 end
 %%
 fprintf(['It totally took ' datestr(seconds(toc(start)),'HH:MM:SS') ,'.\n']);
-close all

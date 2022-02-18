@@ -1,10 +1,10 @@
 % SGL 2021-02-15
 clc; clear; close all
-exp_directory = 'D:\Analysis\2021-12-21';
+exp_directory = 'D:\Analysis\2021-12-10';
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'colors','xmax','hist');
 direction = 'right';
-timerange = [-4 2]; % 2 sec before to 2 sec after
+timerange = [-4 2]; % 4 sec before to 2 sec after
 
 %% CSC
 f=figure(100);
@@ -14,8 +14,8 @@ lfp_all = [];
 phase_all = [];
 i = 0;
 
-sh=1;
-csc_filename=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP32.ncs'); % use plotcsc to optimize it
+sh=4;
+csc_filename=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP1.ncs'); % use plotcsc to optimize it
 [time,data] = read_bin_csc(csc_filename);
 
 for l=[lap([lap.dir]==direction).no]  % only the desired direction
@@ -66,7 +66,7 @@ for l=[lap([lap.dir]==direction).no]  % only the desired direction
 end
 
 % average thetas
-lfp_ave = mean(lfp_all); % mean(lfp_all,1)
+lfp_ave = median(lfp_all); % mean(lfp_all,1)
 t_lfp_ave = timecsc - lap(l).t_jump_exact; % just want to have the resolution of time: dt [-2:dt:2]
 ax1 = subplot(4,1,1); hold off; hold on;
 [theta_ave, phase_ave, mag_ave] = filtertheta(t_lfp_ave,lfp_ave);
@@ -77,13 +77,13 @@ ylabel('Average of all laps (\muV)')
 xlim(timerange)
 
 linkaxes([ax1 ax2 ax3 ax4],'x')
-ylim([-200 200])
+%ylim([-1000 1000])
 box on
 
 sgtitle([direction 'ward laps aligned']);
 saveas(gcf,fullfile(exp_directory, 'Analysis',['Alligned-' direction '.svg']))
 
-%% Histogram of phases at time zero
+% % Histogram of phases at time zero
 % figure(200)
 % bin_size = 30; % deg
 % edges = -180:bin_size:180; % deg

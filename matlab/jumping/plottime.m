@@ -11,7 +11,7 @@ mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'colors','xmax','hist','daq');
 
 v_thresh = 0;
-cluster_no = [1 2];
+cluster_no =[3 13 17 18 22 23 28 29 31]; %[cluster.no];
 direction = 'left';
 isCSC = false;
 timerange = [-2 2]; % 2 sec before to 2 sec after
@@ -19,7 +19,6 @@ timerange = [-2 2]; % 2 sec before to 2 sec after
 %%
 legendCell = cellstr(num2str(cluster_no', 'cluster #%-d'));
 N = nnz([lap.dir]==direction);
-
 
 % color
 for l=1:length(lap)
@@ -31,9 +30,7 @@ for l=1:length(lap)
 end
 
 no_states = length(unique([lap.status]));
-for state = unique([lap.status])
-    disp(state)
-end
+
 %% CSC
 tic
 sh=cluster(cluster_no(1)).sh;
@@ -75,9 +72,7 @@ for l=[lap([lap.dir]==direction).no]  % only the desired direction
     ylabel('Force (N)')
     
     ax4 = subplot(6,1,4); hold on
-    %plot(posi.t(posi.lap==l)-lap(l).t_jump_exact, posi.filt.avx(posi.lap==l));
     plot(posi.t(posi.lap==l)-lap(l).t_jump_exact, posi.filt.avy(posi.lap==l));
-    %plot(pos.t(pos.lap==l)-lap(l).t_jump_exact, pos.pitch(pos.lap==l));
     ylim([-600 600])
     ylabel('Pitch: Anglar velocity (deg/s)')
     
@@ -162,10 +157,10 @@ for c = cluster_no
             flag = 1; % just do this once
         end
         % gap range
-        if c == cluster_no(1) % only draw line for the fist time
-            plot(repmat(lap(l).gap(1),2,1), ylim,lap(l).cross_color,'LineWidth',0.25);
-            plot(repmat(lap(l).gap(2),2,1), ylim,lap(l).cross_color,'LineWidth',0.25);
-        end
+%         if c == cluster_no(1) % only draw line for the fist time
+%             plot(repmat(lap(l).gap(1),2,1), ylim,lap(l).cross_color,'LineWidth',0.25);
+%             plot(repmat(lap(l).gap(2),2,1), ylim,lap(l).cross_color,'LineWidth',0.25);
+%         end
     end
     title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward  (velocity filtered: v >= ' num2str(v_thresh) ' cm/s)'])
     xlabel('Horizontal position (cm)')
@@ -212,10 +207,10 @@ for c = cluster_no
         end
         title(['cluster ' num2str(c) ' lap ' num2str(l)])
         
-        % cross time
-        for i=1:length(lap(l).t_cross)
-            plot(repmat(lap(l).t_cross(i),1,2)-lap(l).t_jump_exact, ylim,lap(l).cross_color,'LineWidth',0.25);
-        end
+%         % cross time
+%         for i=1:length(lap(l).t_cross)
+%             plot(repmat(lap(l).t_cross(i),1,2)-lap(l).t_jump_exact, ylim,lap(l).cross_color,'LineWidth',0.25);
+%         end
         
     end
     title(['cluster(s) ' mat2str(cluster_no) ' all laps combined - direction: ' direction 'ward'])
@@ -238,7 +233,7 @@ legend(h2,legendCell)
 saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '-' direction '.png']))
 
 %}
-%% Rat-map with velocity filter (lab frame)
+%% Rat-map with velocity filter (stationary frame)
 N = length(cluster_no);
 figure(2000); clf;
 i = 0;
@@ -247,7 +242,7 @@ for c = cluster_no
     for state = unique([lap.status])
         for dir = ["left" "right"]
             i = i+1;
-
+            
             idx = posi.status==state & posi.dir==dir & abs(posi.vx) >= v_thresh;
             hist.posi = histcounts(posi.x(idx), hist.edges) * posi.dt; % seconds in each bin
             idx = [cluster(c).status]==state & [cluster(c).dir]==dir & abs([cluster(c).vx]) >= v_thresh;
@@ -256,82 +251,90 @@ for c = cluster_no
             
             a(i) = subplot(N*no_states,2,i);
             histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); hold on; %rate map histogram
-            ylabel(['cluster ' num2str(c)]);
+            ylabel(['#' num2str(c) ':' cluster(c).region]);
             if i <= no_states
                 title(['Rate Map (' convertStringsToChars(dir) 'ward)'])
             end
             if i >= 2*N*no_states-1
                 xlabel('Horizontal position (cm)')
             end
-
+            
             if mod(i,2*no_states)==0
                 linkaxes([a(i) a(i-1) a(i-2) a(i-3)],'y')
                 ylim(max([0 5],ylim)); % start from 0 when no cell rate map is null
+                
+                for j=i:-1:i-3
+                    subplot(N*no_states,2,j);
+                    states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
+                    for l=[lap([lap.dir]==dir & [lap.status]==states(i-j+1)).no]  % only the desired direction
+                        % gap range
+                        plot(repmat(lap(l).gap(1),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
+                        plot(repmat(lap(l).gap(2),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
+                    end
+                    a(j).Children = circshift(a(j).Children,1);
+                end
             end
-            
-            for l=[lap([lap.dir]==dir & [lap.status]==state).no]  % only the desired direction
-                % gap range
-                plot(repmat(lap(l).gap(1),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
-                plot(repmat(lap(l).gap(2),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
-            end
-            
         end
     end
 end
-
 toc
 set(gcf, 'Position', [100 100 1000 200+100*N*no_states]);
 linkaxes(a,'x')
 zoom xon
 xlim([0 xmax])
-sgtitle(['Directional Ratemap (velocity filtered: v >= ' num2str(v_thresh) ' cm/s)']);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.png']))
+sgtitle(['Directional ratemap, stationary frame of reference: left platform (velocity filtered: v >= ' num2str(v_thresh) ' cm/s)']);
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '_stationary.png']))
 
 %% Rat-map with velocity filter (moving frame)
-N = length(cluster_no);
-figure(2001); clf;
-i = 0;
-for c = cluster_no
-    
-    for state = unique([lap.status])
-        for dir = ["left" "right"]
-            i = i+1;
-
-            idx = posi.status==state & posi.dir==dir & abs(posi.vx) >= v_thresh;
-            hist.posi = histcounts(posi.x_corr(idx), hist.edges) * posi.dt; % seconds in each bin
-            idx = [cluster(c).status]==state & [cluster(c).dir]==dir & abs([cluster(c).vx]) >= v_thresh;
-            hist.cluster = histcounts(cluster(c).x_corr(idx), hist.edges); % spikes in each bin
-            hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
-            
-            a(i) = subplot(N*no_states,2,i);
-            histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); hold on; %rate map histogram
-            ylabel(['cluster ' num2str(c)]);
-            if i <= no_states
-                title(['Rate Map (' convertStringsToChars(dir) 'ward)'])
+    N = length(cluster_no);
+    figure(2001); clf;
+    i = 0;
+    for c = cluster_no
+        
+        for state = unique([lap.status])
+            for dir = ["left" "right"]
+                i = i+1;
+                
+                idx = posi.status==state & posi.dir==dir & abs(posi.vx) >= v_thresh;
+                hist.posi = histcounts(posi.x_corr(idx), hist.edges) * posi.dt; % seconds in each bin
+                idx = [cluster(c).status]==state & [cluster(c).dir]==dir & abs([cluster(c).vx]) >= v_thresh;
+                hist.cluster = histcounts(cluster(c).x_corr(idx), hist.edges); % spikes in each bin
+                hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
+                
+                a(i) = subplot(N*no_states,2,i);
+                histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c)); hold on; %rate map histogram
+                ylabel(['#' num2str(c) ':' cluster(c).region]);
+                if i <= no_states
+                    title(['Rate Map (' convertStringsToChars(dir) 'ward)'])
+                end
+                if i >= 2*N*no_states-1
+                    xlabel('Horizontal position (cm)')
+                end
+                
+                if mod(i,2*no_states)==0
+                    linkaxes([a(i) a(i-1) a(i-2) a(i-3)],'y')
+                    ylim(max([0 5],ylim)); % start from 0 when no cell rate map is null
+                    
+                    for j=i:-1:i-3
+                        subplot(N*no_states,2,j);
+                        states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
+                        for l=[lap([lap.dir]==dir & [lap.status]==states(i-j+1)).no]  % only the desired direction
+                            % gap range
+                            plot(repmat(lap(l).gap_corr(1),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
+                            plot(repmat(lap(l).gap_corr(2),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
+                        end
+                        a(j).Children = circshift(a(j).Children,1);
+                    end
+                end
+                
             end
-            if i >= 2*N*no_states-1
-                xlabel('Horizontal position (cm)')
-            end
-
-            if mod(i,2*no_states)==0
-                linkaxes([a(i) a(i-1) a(i-2) a(i-3)],'y')
-                ylim(max([0 5],ylim)); % start from 0 when no cell rate map is null
-            end
-            
-            for l=[lap([lap.dir]==dir & [lap.status]==state).no]  % only the desired direction
-                % gap range
-                plot(repmat(lap(l).gap_corr(1),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
-                plot(repmat(lap(l).gap_corr(2),1,2), ylim,lap(l).cross_color,'LineWidth',0.25);
-            end
-            
         end
     end
-end
-
-toc
-set(gcf, 'Position', [100 100 1000 200+100*N*no_states]);
-linkaxes(a,'x')
-zoom xon
-xlim(max([lap.corr])+[0 xmax])
-sgtitle(['Directional Ratemap (velocity filtered: v >= ' num2str(v_thresh) ' cm/s)']);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '.png']))
+    
+    toc
+    set(gcf, 'Position', [100 100 1000 200+100*N*no_states]);
+    linkaxes(a,'x')
+    zoom xon
+    xlim(max([lap.corr])+[0 xmax])
+    sgtitle(['Directional ratemap, moving frame of reference: right platform (velocity filtered: v >= ' num2str(v_thresh) ' cm/s)']);
+    saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap-cl' mat2str(cluster_no) '_moving.png']))

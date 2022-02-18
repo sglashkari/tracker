@@ -1,8 +1,8 @@
-% This program plots the data for Rat 980 (originally 913)
+%%% This program plots the data for Rat 980 (originally 913)
 % The data include the occupancy and histogram of the spikes and the
 % sequential firing of multiple spikes before jumping
 %
-%   See also PLOTRATEMAP.
+%   See also PLOTRATEMAP, PLOTTIME, PLOTHYSTERESIS.
 %       
 % SGL 2022-01-26 (originally 2021-01-31)
 %
@@ -14,13 +14,11 @@ end
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename,'pos','cluster','exp','ppcm', 'daq');
 
-[img_file,img_directory] = uigetfile(fullfile(exp_directory,'frames','*.pgm'), 'Select Image File');
-if isequal(img_file, 0)
-    error('Image file was not selected!')
-end
-img_filename = fullfile(img_directory, img_file);
+frames = dir(fullfile(exp_directory,'frames','*.pgm'));
+img_filename = fullfile(frames(1).folder, frames(1).name);
 
-% [csc_filename,csc_directory] = uigetfile(fullfile(exp_directory,'*.ncs'), 'Select a CSC File');
+% for phase calculations
+% [csc_filename,csc_directory] = uigetfile(fullfile(exp_directory,'*.ncs'),'Select a CSC File');
 % if isequal(csc_filename, 0)
 %     error('CSC file was not selected!')
 % end
@@ -28,7 +26,6 @@ img_filename = fullfile(img_directory, img_file);
 
 colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
 colors = repmat(colors', ceil(length(cluster)/length(colors))); % repeat the colors to match the total number of clusters
-%colors(35) = "#00CCCC";
 
 img = imread(img_filename);
 xmax = ceil(size(img,2)/ppcm);
@@ -38,6 +35,7 @@ start = tic;
 %% Exclusions 
 % MODIFY FOR EACH DAY!!!
 % 
+%colors(35) = "#00CCCC";
 cluster_exlude = [];
 
 % % Excluding some clusters (e.g. inter-neurons) -- not a good idea
@@ -217,6 +215,7 @@ end
 posi.filt.av = vecnorm([posi.filt.avx; posi.filt.avy; posi.filt.avz]);  % angular speed in deg/sec
 %% plotting the occupancy
 figure(4); clf;
+img_filename = [frames(1).folder filesep 'frame-' num2str(lap(1).frame) '.pgm'];
 img = imread(img_filename);
 img = imlocalbrighten(img);
 img = medfilt2(img);

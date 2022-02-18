@@ -5,11 +5,11 @@ function [lap, idx_analysis] = lapdetector(exp_directory, varargin)
 %  Inputs:
 %       (1) Experiment Directory
 %       (2) Length of image (in cm)
-%       (3) Mode of Lap detection: 
-%           (a) mode = [] empty: the whole lap; 
+%       (3) Mode of Lap detection:
+%           (a) mode = [] empty: the whole lap;
 %           (b) mode = T : T sec before to T sec after
-%           (c) mode = [T1 T2] : T1 se before up to T2 
-%               sec after. sign doesn't matter: 
+%           (c) mode = [T1 T2] : T1 se before up to T2
+%               sec after. sign doesn't matter:
 %               mode = [-abs(mode(1)) abs(mode(end))])
 %       (4) Time Analysis 2xN [Initial Final]
 %               e.g. [1 2; 3 4; 5 6; 7 8]
@@ -58,7 +58,8 @@ mode = [-inf inf]; % the whole lap
 time_of_analysis = [pos.t(1) pos.t(end)];
 time_exclusion = [];
 %x_thresh = [133 143];
-x_thresh = [133 139];
+x_thresh = [133 138];
+v_thresh = 40;
 
 for argidx = 1:2:nargin-1
     switch varargin{argidx}
@@ -112,35 +113,65 @@ end
 t = pos.t(idx_analysis);
 x = pos.x(idx_analysis);
 vx = pos.vx(idx_analysis);
-vx = filterlfp(t, vx, 0.01, 2); % cm/sec
-    
+%t_interp = t(1):1/30000:t(end);
+%vx_interp = interp1(t, vx, t_interp);
+vx = filterlfp(t, vx, 0.01, 1); % cm/sec
+%vx = interp1(t_interp, vx_interp, t);
+
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
-plot(t,abs(vx))
+plot(t,vx)
 %% jump detection
 
 daq.ditch = double(daq.loadcell(2,:)>1);
 ditch = interp1(daq.t,daq.ditch,t,'linear','extrap');
 ditch = movmax(ditch, [100 0]); % extend the ditch
-plot(t,ditch*xmax)
+plot(t,ditch*xmax/2)
+
 % times that the rats jump (based on jump direction)
-jump_criteria_leftward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx < -40) & (~ditch); % multiple criterion
-jump_criteria_rightward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx > 40) & (~ditch); % multiple criterion
+jump_criteria_leftward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx< -v_thresh) & (~ditch); % multiple criterion
+jump_criteria_rightward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx > v_thresh) & (~ditch); % multiple criterion
 
 % detecting the first of such chage
 jump_criteria_leftward = diff(jump_criteria_leftward) == 1;
 jump_criteria_rightward = diff(jump_criteria_rightward) == 1;
 
-% removing double detection
-jump_criteria_leftward_sum = movsum(jump_criteria_leftward, [0 500]);
-jump_criteria_rightward_sum = movsum(jump_criteria_leftward, [0 500]);
-jump_criteria_leftward(jump_criteria_leftward_sum > 1) = 0;
-jump_criteria_rightward(jump_criteria_rightward_sum > 1) = 0;
-
 time_jump_leftward = t(jump_criteria_leftward);
 time_jump_rightward = t(jump_criteria_rightward);
 x_jump_leftward = x(jump_criteria_leftward);
 x_jump_rightward = x(jump_criteria_rightward);
+
+% removing double detection
+for i=length(time_jump_leftward)-1:-1:1
+    idx = t > time_jump_leftward(i) & t <= time_jump_leftward(i+1);
+    if (max(x(idx)) < x_thresh(2) + 40) && (min(x(idx)) > x_thresh(1) - 40)
+        time_jump_leftward(i)=[];
+        x_jump_leftward(i)=[];
+    end
+end
+
+for i=length(time_jump_rightward)-1:-1:1
+    idx = t > time_jump_rightward(i) & t <= time_jump_rightward(i+1);
+    if (max(x(idx)) < x_thresh(2) + 40) && (min(x(idx)) > x_thresh(1) - 40)
+        time_jump_rightward(i)=[];
+        x_jump_rightward(i)=[];
+    end
+end
+
+% jump_criteria_leftward_sum = movsum(jump_criteria_leftward, [0 500]);
+% jump_criteria_rightward_sum = movsum(jump_criteria_leftward, [0 500]);
+% if exp.day == 20 && exp.rat == 980
+%     jump_criteria_leftward_sum = movsum(jump_criteria_leftward, [0 400]);
+% jump_criteria_rightward_sum = movsum(jump_criteria_leftward, [0 400]);
+% end
+% jump_criteria_leftward(jump_criteria_leftward_sum > 1) = 0;
+% jump_criteria_rightward(jump_criteria_rightward_sum > 1) = 0;
+%
+%
+% time_jump_leftward = t(jump_criteria_leftward);
+% time_jump_rightward = t(jump_criteria_rightward);
+% x_jump_leftward = x(jump_criteria_leftward);
+% x_jump_rightward = x(jump_criteria_rightward);
 
 plot(time_jump_leftward, x_jump_leftward, 'hk', 'MarkerSize',15)
 plot(time_jump_rightward, x_jump_rightward, 'hr', 'MarkerSize',15)
@@ -226,11 +257,26 @@ for l=1:length(lap)
     idx = t >= lap(l).t_jump+0.4 & t <= lap(l).t_jump+0.6;
     if mean(ditch(idx))>0.9 % 90% probability ditch
         lap(l).status = "ditch";
+        lap(l).cross_color = 'r';
     else
         lap(l).status = "jump";
-    end 
+        lap(l).cross_color = 'b';
+    end
 end
-    
+
+% marking change of status from previous lap (same-direction)
+for dir = ["right" "left"]
+    idx = [lap([lap.dir]==dir).no];
+    lap(idx(1)).change = false;
+    for l=2:length(idx)
+        if lap(idx(l)).status == lap(idx(l-1)).status
+            lap(idx(l)).change = false;
+        else
+            lap(idx(l)).change = true;
+        end
+    end
+end
+
 %% save file if the functiona in called, otherwise display the info
 if nargout ~= 0
     analysis_directory = fullfile(exp_directory, 'Analysis');
