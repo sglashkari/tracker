@@ -120,13 +120,13 @@ vx = filterlfp(t, vx, 0.01, 1); % cm/sec
 
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
-plot(t,vx)
+%plot(t,vx)
 %% jump detection
 
 daq.ditch = double(daq.loadcell(2,:)>1);
 ditch = interp1(daq.t,daq.ditch,t,'linear','extrap');
 ditch = movmax(ditch, [100 0]); % extend the ditch
-plot(t,ditch*xmax/2)
+%plot(t,ditch*xmax/2)
 
 % times that the rats jump (based on jump direction)
 jump_criteria_leftward = (x > x_thresh(1)) & (x < x_thresh(2)) & (vx< -v_thresh) & (~ditch); % multiple criterion
@@ -250,12 +250,12 @@ for l=1:length(lap)
     plot(t(idx),x(idx),color)
 end
 xlim([tri trf])
-set(gcf, 'Position', [50 50 2300 1300]);
+set(gcf, 'Position', [0 50 2500 1300]);
 
 %% Marking laps as jump or ditch
 for l=1:length(lap)
-    idx = t >= lap(l).t_jump+0.4 & t <= lap(l).t_jump+0.6;
-    if mean(ditch(idx))>0.9 % 90% probability ditch
+    idx = (t >= lap(l).t_jump+0.4) & (t <= lap(l).t_jump+0.6);
+    if mean(ditch(idx))>0.9 || sum(idx>0)==0 % 90% probability ditch (or the rat is hidden from camera for 200 ms)
         lap(l).status = "ditch";
         lap(l).cross_color = 'r';
     else

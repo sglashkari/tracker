@@ -21,10 +21,16 @@ for l=2:length(lap)
     end
 end
 
-figure(1);
-plot([lap.t_jump],[lap.gap_length]);
+figure(1); clf
+%plot([lap.t_jump],[lap.gap_length]);
+plot(pos.t,pos.len)
+xlim([0 max(pos.t)])
+ylabel('Gap Length (cm)')
+xlabel('Time (sec)')
+set(gcf, 'Position', [100 100 1800 600]);
+saveas(gcf,fullfile(exp_directory, 'Analysis',['GapLength-Time.png']))
 
-%% increase & rightward
+%% all 4 combinations
 Legend=cell(4,1);
 i = 0;
 hist.edges = 10:2:40;

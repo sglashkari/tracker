@@ -8,8 +8,8 @@ end
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename, 'pos', 'posi', 'lap', 'cluster','ppcm', 'colors','xmax','hist');
 start = tic;
-cluster_no =[3 13 17 18 22 23 28 29 31]; %[cluster.no];
-showlapbylap = true;
+cluster_no = []; %[17 18 22 23 28 29 31]; %[cluster.no];
+showlapbylap = false;
 %% Plotting the spikes on the path
 
 for l = 1:length(lap)
@@ -74,7 +74,7 @@ for i = 1:ceil(length(cluster)/14)
     for j=1:14
         c = (i-1) * 14 + j;
         if c > length(cluster)
-            continue;
+            break;
         end
         % leftward rate mapj
         hist.posi = histcounts(posi.x(posi.dir=="left"), hist.edges) * posi.dt; % seconds in each bin
@@ -108,12 +108,12 @@ for i = 1:ceil(length(cluster)/14)
         
         % edge of gap
         hold on
-        plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
-        plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(1).gap(1),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(1).gap(2),2,1), ylim,'b','LineWidth',2);
         a(2*j-1) = subplot(14,2,14*2-(2*j-1));
         hold on
-        plot(repmat(lap(l).gap(1),2,1), ylim,'b','LineWidth',2);
-        plot(repmat(lap(l).gap(2),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(1).gap(1),2,1), ylim,'b','LineWidth',2);
+        plot(repmat(lap(1).gap(2),2,1), ylim,'b','LineWidth',2);
     end
     
     set(gcf, 'Position', [100 100 1600 1100]);

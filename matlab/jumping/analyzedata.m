@@ -3,7 +3,7 @@
 % sequential firing of multiple spikes before jumping
 %
 %   See also PLOTRATEMAP, PLOTTIME, PLOTHYSTERESIS.
-%       
+%
 % SGL 2022-01-26 (originally 2021-01-31)
 %
 clc; clear; close all;
@@ -24,7 +24,7 @@ img_filename = fullfile(frames(1).folder, frames(1).name);
 % end
 % csc_filename = fullfile(csc_directory, csc_filename);
 
-colors = ["#EDB120" "#7E2F8E" "yellow" "#A2142F" "red" "magenta" "green" "#D95319"];
+colors = ["#e6194B" "#3cb44b" "#ffe119"  "#f58231" "#42d4f4" "#f032e6" "#fabed4" "#469990" "#9A6324"];
 colors = repmat(colors', ceil(length(cluster)/length(colors))); % repeat the colors to match the total number of clusters
 
 img = imread(img_filename);
@@ -32,17 +32,19 @@ xmax = ceil(size(img,2)/ppcm);
 
 start = tic;
 
-%% Exclusions 
+%% Exclusions
 % MODIFY FOR EACH DAY!!!
-% 
-%colors(35) = "#00CCCC";
-cluster_exlude = [];
+%
+if exp.name == "21-Dec-2021"
+    cluster_exlude = [33];
+    colors([17 18 22 23 28 29 31]) = colors(1:7);
+end
 
-% % Excluding some clusters (e.g. inter-neurons) -- not a good idea
-% if ~isempty(cluster_exlude)
-%     cluster(cluster_exlude)=[];
-%     disp(['clusters ' num2str(cluster_exlude) ' excluded.']); 
-% end
+% Excluding some clusters (e.g. inter-neurons) -- not a good idea
+if ~isempty(cluster_exlude)
+    cluster(cluster_exlude)=[];
+    disp(['clusters ' num2str(cluster_exlude) ' excluded.']);
+end
 
 %% Plotting the position vs time and marking neural recording times,
 % maze times and lap detection times
@@ -77,11 +79,12 @@ for l = 1:length(lap)
     gapidx = [0; diff(gapidx)];
     post = pos.t(idx);
     lap(l).t_cross = post(gapidx~=0)';
-end 
+    lap(l).t_land = lap(l).t_cross(end);
+end
 
 for l = 1:length(lap)
     lap(l).corr = max([lap.gap_length]) - lap(l).gap_length;
-    lap(l).gap_corr = lap(l).gap + lap(l).corr;
+    %lap(l).gap_corr = lap(l).gap + lap(l).corr;
 end
 
 %% Adding laps and direction to clusters
@@ -89,13 +92,13 @@ for c=1:length(cluster)
     cluster(c).lap = zeros(size(cluster(c).t));
     cluster(c).dir = strings(size(cluster(c).t));
     cluster(c).status = strings(size(cluster(c).t));
-    cluster(c).x_corr = cluster(c).x;
+    %cluster(c).x_corr = cluster(c).x;
     for l = 1:length(lap)
         idx = (cluster(c).t >=lap(l).t(1)) & (cluster(c).t <lap(l).t(2)); % lap
         cluster(c).lap(idx)= lap(l).no;
         cluster(c).dir(idx)=lap(l).dir;
         cluster(c).status(idx)=lap(l).status;
-        cluster(c).x_corr(idx) = cluster(c).x(idx) + lap(l).corr; 
+        %cluster(c).x_corr(idx) = cluster(c).x(idx) + lap(l).corr;
     end
 end
 
@@ -131,7 +134,7 @@ end
 posi.dt = 1/1000; % interpolation 1 kHz
 posi.t = [];
 posi.x = [];
-posi.x_corr = []; % corrected for the gap size
+%posi.x_corr = []; % corrected for the gap size
 posi.y = [];
 posi.vx = [];
 posi.vy = [];
@@ -157,11 +160,11 @@ for l = 1:length(lap)
     interp.t = lap(l).t(1):posi.dt:lap(l).t(2);
     % interpolation for position
     interp.x = interp1(pos.t, pos.x, interp.t);
-    interp.x_corr = interp.x + lap(l).corr;
+    %interp.x_corr = interp.x + lap(l).corr;
     interp.y = interp1(pos.t, pos.y, interp.t);
     % interpolation for velocity
     interp.vx = interp1(pos.t, pos.vx, interp.t);
-    interp.vy = interp1(pos.t, pos.vy, interp.t); 
+    interp.vy = interp1(pos.t, pos.vy, interp.t);
     % angles
     interp.roll = interp1(pos.t, pos.roll, interp.t);
     interp.pitch = interp1(pos.t, pos.pitch, interp.t);
@@ -176,7 +179,7 @@ for l = 1:length(lap)
     
     posi.t = [posi.t interp.t];
     posi.x = [posi.x interp.x];
-    posi.x_corr = [posi.x_corr interp.x_corr];
+    %posi.x_corr = [posi.x_corr interp.x_corr];
     posi.y = [posi.y interp.y];
     posi.vx = [posi.vx interp.vx];
     posi.vy = [posi.vy interp.vy];
@@ -186,11 +189,11 @@ for l = 1:length(lap)
     % angles
     posi.roll = [posi.roll interp.roll];
     posi.pitch = [posi.pitch interp.pitch];
-    posi.yaw = [posi.yaw interp.yaw];    
-
+    posi.yaw = [posi.yaw interp.yaw];
+    
     % filtered data:
-    interp.filt.vx = filtertheta(interp.t, interp.vx, 0.01, 10); % cm/sec
-    interp.filt.vy = filtertheta(interp.t, interp.vy, 0.01, 10); % cm/sec
+    interp.filt.vx = filterlfp(interp.t, interp.vx, 0.01, 10); % cm/sec
+    interp.filt.vy = filterlfp(interp.t, interp.vy, 0.01, 10); % cm/sec
     interp.filt.s = vecnorm([interp.filt.vx interp.filt.vy]')';  % speed in cm/sec
     interp.filt.ax = gradient(interp.filt.vx)./gradient(interp.t);   % ax in cm/sec
     interp.filt.ay = gradient(interp.filt.vy)./gradient(interp.t);   % ax in cm/sec
@@ -198,9 +201,9 @@ for l = 1:length(lap)
     interp.avx = gradient(interp.roll)./gradient(interp.t);   % avx in deg/sec
     interp.avy = gradient(interp.pitch)./gradient(interp.t);   % avy in deg/sec
     interp.avz = gradient(interp.yaw)./gradient(interp.t);   % avz in deg/sec
-    interp.filt.avx = filtertheta(interp.t, interp.avx, 0.01, 10); % deg/sec
-    interp.filt.avy = filtertheta(interp.t, interp.avy, 0.01, 10); % deg/sec
-    interp.filt.avz = filtertheta(interp.t, interp.avz, 0.01, 10); % deg/sec
+    interp.filt.avx = filterlfp(interp.t, interp.avx, 0.01, 10); % deg/sec
+    interp.filt.avy = filterlfp(interp.t, interp.avy, 0.01, 10); % deg/sec
+    interp.filt.avz = filterlfp(interp.t, interp.avz, 0.01, 10); % deg/sec
     
     posi.filt.vx = [posi.filt.vx interp.filt.vx];
     posi.filt.vy = [posi.filt.vy interp.filt.vy];
@@ -215,7 +218,8 @@ end
 posi.filt.av = vecnorm([posi.filt.avx; posi.filt.avy; posi.filt.avz]);  % angular speed in deg/sec
 %% plotting the occupancy
 figure(4); clf;
-img_filename = [frames(1).folder filesep 'frame-' num2str(lap(1).frame) '.pgm'];
+l = 55; %l = randi([1 length(lap)]);
+img_filename = [frames(1).folder filesep 'frame-' num2str(lap(l).frame) '.pgm'];
 img = imread(img_filename);
 img = imlocalbrighten(img);
 img = medfilt2(img);
@@ -223,10 +227,12 @@ imshow(img);
 figure(4)
 hold on
 h = quiver(posi.x * ppcm,posi.y * ppcm,posi.vx * ppcm,posi.vy * ppcm,2);
-plot(repmat(lap(1).gap(1),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2);
-plot(repmat(lap(1).gap(2),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2);
+plot(repmat(lap(l).gap(1),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2); % lap(l).cross_color
+plot(repmat(lap(l).gap(2),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2); % lap(l).cross_color
 title('Occupancy with Velocity')
-saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity2.jpg'])
+%title(['Rat ' convertStringsToChars(lap(l).status) 'ing ' convertStringsToChars(lap(l).dir) 'ward'])
+saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
+%saveas(gcf,[exp_directory filesep 'Analysis' filesep 'Lap_' num2str(l) '.jpg'])
 
 %% Rate map binning
 hist.bin_size = 3; % cm
@@ -254,10 +260,10 @@ for sh=1:4
         idx = time >= lap(l).t(1) & time <= lap(l).t(2);
         timecsc = time(idx);
         lfp = data(idx);
-        [theta, phase] = filtertheta(timecsc,lfp);
+        [theta, phase] = filterlfp(timecsc,lfp);
         
         % looking at all the clusters in the same shank
-        for c=[cluster([cluster.sh]==sh).no]
+        for c=1:length(cluster)
             idx = [cluster(c).lap]==l;
             if nnz(idx) > 0 % if there a firing for cluster c in this lap
                 cluster(c).phase(idx) = interp1(timecsc,phase, cluster(c).t(idx));
