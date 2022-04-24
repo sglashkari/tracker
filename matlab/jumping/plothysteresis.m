@@ -6,7 +6,7 @@ if isequal(datafile, 0)
     error('Data file was not selected!')
 end
 mat_filename = fullfile(exp_directory, datafile);
-load(mat_filename, 'lap');
+load(mat_filename, 'lap','pos');
 start = tic;
 min_passage = 4;
 %% 
@@ -45,13 +45,45 @@ for increment = ["increase" "decrease"]
         figure(10+i);
         hist.probability = round(hist.jump ./ (hist.passage + eps),1);
         histogram('BinCounts', hist.probability, 'BinEdges', hist.edges); % probability histogram
+        title(increment+"  "+dir);
         figure(2);
-        plot(hist.edges(hist.passage>=min_passage),hist.probability(hist.passage>=min_passage),'-.'); hold on
+        subplot(2,1,mod(i-1,2)+1)
+        title(dir+"ward")
+        plot(hist.edges(hist.passage>=min_passage),hist.probability(hist.passage>=min_passage),'-o'); hold on
         hist
-        Legend{i}=[convertStringsToChars(increment) ' & ' convertStringsToChars(dir) 'ward'] ;
+        %Legend{mod(i-1,2)+1}=increment+" & "+dir+"ward"; %[convertStringsToChars(increment) ' & ' convertStringsToChars(dir) 'ward'] ;
+        %legend(Legend);
         sum(hist.passage)
     end
 end
+for i=1:2
+    subplot(2,1,mod(i-1,2)+1)
 ylim([-0.1 1.1]);
-xlim([10 40])
-legend(Legend);
+xlim([15 36])
+legend(["increase" "decrease"]);
+end
+
+%% lumped version
+figure(3); clf
+i = 0;
+hist.edges = 10:2:40;
+for increment = ["increase" "decrease"]
+    i = i + 1;
+    idx = ([lap.gap_status]==increment) & ([lap.status] == 'jump');
+    hist.jump = histcounts([lap(idx).gap_length], hist.edges); % jumps in each bin
+    idx = ([lap.gap_status]==increment) & ([lap.status] == 'ditch');
+    hist.ditch = histcounts([lap(idx).gap_length], hist.edges); % ditches in each bin
+    hist.passage = hist.jump+hist.ditch;
+%     figure(10+i);
+    hist.probability = round(hist.jump ./ (hist.passage + eps),1);
+%     histogram('BinCounts', hist.probability, 'BinEdges', hist.edges); % probability histogram
+    title(increment+"  "+dir);
+%     figure(3);
+    title('lumped')
+    plot(hist.edges(hist.passage>=min_passage),hist.probability(hist.passage>=min_passage),'-o'); hold on
+    hist
+    sum(hist.passage)
+end
+ylim([-0.1 1.1]);
+xlim([14 35])
+legend(["increase" "decrease"]);

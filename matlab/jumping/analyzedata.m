@@ -37,7 +37,9 @@ start = tic;
 %
 if exp.name == "21-Dec-2021"
     cluster_exlude = [33];
-    colors([17 18 22 23 28 29 31]) = colors(1:7);
+    %colors([17 18 22 23 28 29 31]) = colors(1:7);
+    colors(18)="#f58231";
+    colors(28)="#3cb44b";
 end
 
 % Excluding some clusters (e.g. inter-neurons) -- not a good idea
@@ -46,12 +48,17 @@ if ~isempty(cluster_exlude)
     disp(['clusters ' num2str(cluster_exlude) ' excluded.']);
 end
 
+if exp.rat_no == 980
+    gap_edge_in_px = 888.651; % the right edge of the edge in pixels (change for each setup!!!)
+else
+    error('specify the right edge of the edge in pixels!');
+end
 %% Plotting the position vs time and marking neural recording times,
 % maze times and lap detection times
 
 figure(1)
 [lap, idx_analysis] = lapdetector(exp_directory);
-set(gcf, 'Position', [100 100 1536 1175]);
+set(gcf, 'Position', [100 100 1700 1175]);
 xlabel('Time (sec)')
 ylabel('Horizontal position (cm)')
 title('Overall view')
@@ -71,8 +78,14 @@ end
 
 for l = 1:length(lap)
     % Adding gap size to each lap
-    lap(l).gap = 888.651/ppcm + [0 pos.len(pos.t == lap(l).t_jump)];  % two edges of the gap (change for each setup!!!)
+    lap(l).gap = gap_edge_in_px/ppcm + [0 pos.len(pos.t == lap(l).t_jump)];  % two edges of the gap
     lap(l).gap_length = diff(lap(l).gap);
+    if exp.name == "21-Dec-2021"
+        lap(l).gap_depth = 23.2; % cm, 9.125 in (change for each day) !!!
+    else
+        error('specify the gap depth');
+    end
+    
     % time of crossing the gap edges:
     idx = pos.lap==l;
     gapidx = pos.x(idx)>=lap(l).gap(1) & pos.x(idx)<lap(l).gap(2);
@@ -98,7 +111,6 @@ for c=1:length(cluster)
         cluster(c).lap(idx)= lap(l).no;
         cluster(c).dir(idx)=lap(l).dir;
         cluster(c).status(idx)=lap(l).status;
-        %cluster(c).x_corr(idx) = cluster(c).x(idx) + lap(l).corr;
     end
 end
 
@@ -134,8 +146,8 @@ end
 posi.dt = 1/1000; % interpolation 1 kHz
 posi.t = [];
 posi.x = [];
-%posi.x_corr = []; % corrected for the gap size
 posi.y = [];
+posi.p = [];
 posi.vx = [];
 posi.vy = [];
 posi.lap = [];
@@ -157,11 +169,11 @@ posi.filt.av = [];
 
 for l = 1:length(lap)
     % interpolation
-    interp.t = lap(l).t(1):posi.dt:lap(l).t(2);
+    interp.t = lap(l).t(1):posi.dt:lap(l).t(2); % it's 1xN should be Nx1
     % interpolation for position
     interp.x = interp1(pos.t, pos.x, interp.t);
-    %interp.x_corr = interp.x + lap(l).corr;
     interp.y = interp1(pos.t, pos.y, interp.t);
+    interp.p = interp1(pos.t, pos.p, interp.t);
     % interpolation for velocity
     interp.vx = interp1(pos.t, pos.vx, interp.t);
     interp.vy = interp1(pos.t, pos.vy, interp.t);
@@ -179,8 +191,8 @@ for l = 1:length(lap)
     
     posi.t = [posi.t interp.t];
     posi.x = [posi.x interp.x];
-    %posi.x_corr = [posi.x_corr interp.x_corr];
     posi.y = [posi.y interp.y];
+    posi.p = [posi.p; interp.p];
     posi.vx = [posi.vx interp.vx];
     posi.vy = [posi.vy interp.vy];
     posi.dir = [posi.dir interp.dir];
@@ -215,6 +227,7 @@ for l = 1:length(lap)
     posi.filt.avy = [posi.filt.avy interp.filt.avy];
     posi.filt.avz = [posi.filt.avz interp.filt.avz];
 end
+posi.s = vecnorm([posi.vx; posi.vy]);
 posi.filt.av = vecnorm([posi.filt.avx; posi.filt.avy; posi.filt.avz]);  % angular speed in deg/sec
 %% plotting the occupancy
 figure(4); clf;
@@ -232,8 +245,43 @@ plot(repmat(lap(l).gap(2),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2); % lap(l).cr
 title('Occupancy with Velocity')
 %title(['Rat ' convertStringsToChars(lap(l).status) 'ing ' convertStringsToChars(lap(l).dir) 'ward'])
 saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
-%saveas(gcf,[exp_directory filesep 'Analysis' filesep 'Lap_' num2str(l) '.jpg'])
 
+%% Directional Speed 
+for j=0:1
+    figure(5+j); clf;
+    i = 0;
+    a = [];
+    for state = unique([lap.status])
+        for dir = ["left" "right"]
+            i = i+1;
+            idx = pos.status==state & pos.dir==dir & pos.s >= s_thresh & pos.s <= 250;
+            a(i) = subplot(no_states,2,i);
+            if j==0
+                plot(pos.x(idx),pos.s(idx),'.')
+            else
+                plot(pos.x(idx)+[lap(pos.lap(idx)).corr]',pos.s(idx),'.');
+            end
+            ylabel('Speed (cm/s)');
+            title([convertStringsToChars(dir) 'ward ' convertStringsToChars(state)])
+            if i >= 2*no_states-1
+                xlabel('Horizontal position (cm)')
+            end
+        end
+    end
+    
+    %toc
+    set(gcf, 'Position', [0 0 1800 300+200*no_states]);
+    linkaxes(a,'xy')
+    zoom xon
+    xlim([0 xmax])
+    if j==0
+        sgtitle('Directional speed (stationary frame of ref)');
+        saveas(gcf,fullfile(exp_directory, 'Analysis','Directional_speed_stationary.png'))
+    else
+        sgtitle('Directional speed (moving frame of ref)');
+        saveas(gcf,fullfile(exp_directory, 'Analysis','Directional_speed_moving.png'))
+    end
+end
 %% Rate map binning
 hist.bin_size = 3; % cm
 hist.edges = 0:hist.bin_size:xmax; % size of image to cm

@@ -60,6 +60,7 @@ time_exclusion = [];
 %x_thresh = [133 143];
 x_thresh = [133 138];
 v_thresh = 40;
+include_reward_perch_time = false;
 
 for argidx = 1:2:nargin-1
     switch varargin{argidx}
@@ -73,6 +74,8 @@ for argidx = 1:2:nargin-1
             time_exclusion = varargin{argidx+1};
         case 'thresh'
             x_thresh = varargin{argidx+1};
+        case 'reward'
+            include_reward_perch_time = varargin{argidx+1};
     end
 end
 mode = [-abs(mode(1)) abs(mode(end))]; % e.g. 2 would be [-2 -2] from 2 seconds before to 2 seconds after
@@ -120,7 +123,7 @@ vx = filterlfp(t, vx, 0.01, 1); % cm/sec
 
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
-%plot(t,vx)
+% plot(t,abs(vx))
 %% jump detection
 
 daq.ditch = double(daq.loadcell(2,:)>1);
@@ -185,11 +188,38 @@ for i = 1:1:N-2
     %lap extremes (max and min)
     jump_idx_lap = t>=time_jump(i) & t<time_jump(i+1);
     tl = t(jump_idx_lap);
-    [x_right(l), idx] = max(x(jump_idx_lap));
+    xl = x(jump_idx_lap);
+    [x_right(l), idx] = max(xl);
     t_right(l) = tl(idx);
-    [x_left(l), idx] = min(x(jump_idx_lap));
+    x_right(l+1) = x_right(l);
+    t_right(l+1) = t_right(l);
+    % ignoring the peak reward zone
+    if ~isempty(xl(xl > (xmax - 50))) && ~include_reward_perch_time
+        tp = tl(xl > (xmax - 50));
+        xp = xl(xl > (xmax - 50));
+        [~, peak_idx] = findpeaks(xp);
+        x_right(l) = xp(peak_idx(1));
+        t_right(l) = tp(peak_idx(1));
+        x_right(l+1) = xp(peak_idx(end));
+        t_right(l+1) = tp(peak_idx(end));
+    end
+    
+    [x_left(l), idx] = min(xl);
     t_left(l) = tl(idx);
-    l = l+1;
+    x_left(l+1) = x_left(l);
+    t_left(l+1) = t_left(l);
+    
+    % ignoring the valley reward zone
+    if ~isempty(xl(xl < 50)) && ~include_reward_perch_time
+        tv = tl(xl < 50);
+        xv = xl(xl < 50);
+        [~, valley_idx] = findpeaks(xmax-xv);
+        x_left(l) = xv(valley_idx(1));
+        t_left(l) = tv(valley_idx(1));
+        x_left(l+1) = xv(valley_idx(end));
+        t_left(l+1) = tv(valley_idx(end));
+    end
+    l = l+2;
 end
 
 % ignore extremes in the vicinity of the gap
