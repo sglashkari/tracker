@@ -83,6 +83,9 @@
 *.mp3
 *.wma
 
+# Data
+*.csv
+*.mat
 
 # TEMP FILES
 noah_hist_correction.m
