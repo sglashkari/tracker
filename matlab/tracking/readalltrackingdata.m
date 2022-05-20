@@ -32,11 +32,11 @@ frame_no_side = [Samples.frame]';
 
 figure(1); hold on;
 %plot(frame_no_side,l_side); hold on
-l_side = movmedian(l_side,800); % length of ditch
+l_side = movmedian(l_side,1000); % length of ditch
 hold on
 plot(frame_no_side,l_side,'r');
 hold on
-plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,800),'g');
+plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,1000),'g');
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -94,16 +94,26 @@ if isfile(Filename)
         success = zeros(length(t),1);
     else
         head(P,10)
-        pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
-        rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
+        try % new
+            pos = [P.trans_mark_wrt_ref_x P.y_2 P.z_2];
+            rot = [P.rot_mark_wrt_ref_x P.y_3 P.z_3 P.w_1];
+            clust_pos = [P.clust_pos_on_wrld_plane_x P.y_4];
+        catch % old (before 2022-03-05 update)
+            pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
+            rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
+        end
         success = P.success_code;
         fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
         % figure
-        figure(5)
+        figure(5); clf
         ax1 = subplot(2,1,1);
         plot(frame_no,x,'.b')
         ax2 = subplot(2,1,2);
-        plot(frame_no,P.trans_mark_wrt_base_x,'.r')
+        plot(frame_no(success>0),clust_pos(success>0,1),'.r'); hold on
+        plot(frame_no(success>0),pos(success>0,1),'.b');
+        legend('x: center of cluster','x: crown ref frame')
+        xlabel('Frame No')
+        ylabel('Horizontal position (m)')
         linkaxes([ax1 ax2],'x');
     end
 else

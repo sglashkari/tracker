@@ -52,8 +52,8 @@ fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
 if max(flag == 1)
     fprintf('Accuracy of high confidence 2D tracking is %.2f%%\n',100*sum(flag>0)/length(t))
 end
-%Filename = fullfile(path,'..','top-tracking.csv');
-%writetable(T,Filename,'Delimiter',',')
+Filename = fullfile(path,'..','top-tracking.csv');
+writetable(T,Filename,'Delimiter',',')
 
 %% Pose
 Filename = fullfile(path,'..','pose.csv');
