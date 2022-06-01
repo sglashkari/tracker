@@ -27,16 +27,15 @@ fclose(FileID);
 Samples = m.Data;
 xr = [Samples.x]';
 xl = [Samples.y]';
-l_side = (0.0308 * xr - 17.114 - (0.0308 * xl - 4.4788)) * 2.54; % inch to cm
+%l_side = (0.0308 * xr - 17.114 - (0.0308 * xl - 4.4788)) * 2.54; % inch to cm (Rat 980)
+l_side = (0.0257 * (xr - xl) - 13.01) * 2.54; % inch to cm (Rat 1024)
 frame_no_side = [Samples.frame]';
 
 figure(1); hold on;
-%plot(frame_no_side,l_side); hold on
-l_side = movmedian(l_side,1000); % length of ditch
-hold on
+l_side = movmedian(l_side,2000); % length of ditch
 plot(frame_no_side,l_side,'r');
-hold on
-plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,1000),'g');
+%plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,2000),'g'); % (Rat 980)
+plot(frame_no_side,movmedian(0.0257 * xl * 2.54,2000),'g'); % (Rat 1024)
 
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
@@ -119,6 +118,7 @@ if isfile(Filename)
 else
     pos = zeros(length(t),3);
     rot = [zeros(length(t),3) ones(length(t),1)];
+    success = zeros(length(t),1);
     disp([Filename ' does not exist!'])
 end
 
