@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         cerr << "Usage: " << argv[0] << " " << argv[1] << " [File Type] [Size]\n"
         << "File Type:\n\t-r,--raw RAW File\tSpecify the image file type \n"
         << "\t(Default): pgm file type\n"
-        << "Size:\n\tcolumn x row (e.g. 1200x600)\n"
+        << "Size:\n\tcolumn x row (e.g. 2048x400)\n"
         << endl;
         return 1;
     }

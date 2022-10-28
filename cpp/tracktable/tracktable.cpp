@@ -262,7 +262,7 @@ int main(int argc, char** argv)
         // Set up detector with params
       Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
 
-      int right_nail_idx=2, left_nail_idx=1;
+      int left_nail_idx=0, right_nail_idx=1; // 1 & 2 for most of the days for 980, 0 & 1 for 1024, 1055
         // Detect blobs
         if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
             detector->detect( image_bin, keypoints);
@@ -271,21 +271,27 @@ int main(int argc, char** argv)
                     return first.pt.x < second.pt.x;
                 }); 
 
+
             for (int i=0;i<keypoints.size();i++)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
-
-            for (int i=3;i<keypoints.size();i++){
-                if (keypoints[right_nail_idx].pt.y > (keypoints[0].pt.y + 10) || keypoints[right_nail_idx].pt.y < (keypoints[0].pt.y - 30)  || keypoints[right_nail_idx].pt.x < (xr - 50)) { // 2021-12-09 detecting the largest marker
+            cout << "right_nail_idx: " << right_nail_idx << " left_nail_idx: " << left_nail_idx<< endl;
+            
+            for (int i=right_nail_idx+1;i<keypoints.size();i++){
+                //if (keypoints[right_nail_idx].pt.y > (keypoints[0].pt.y + 10) || keypoints[right_nail_idx].pt.y < (keypoints[0].pt.y - 30) ) //|| keypoints[right_nail_idx].pt.x < (xr - 50))  // 2021-12-09 detecting the largest marker
+                if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 20) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
                     right_nail_idx = i;
-                } 
-
             }
-            if (keypoints[right_nail_idx].pt.x > (xrc + 50))
+
+            if (keypoints.size()<2)
+                flag = 0;
+            //else if (keypoints[right_nail_idx].pt.x > (xrc + 50))
+            //    flag = 0;
+            else if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 20) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
                 flag = 0;
             else
                 flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
 
-            if (keypoints[left_nail_idx].pt.x > col/2){
+            if (keypoints.size()>=2 && keypoints[left_nail_idx].pt.x > col/2){
                 flag = 0;
             }
 
@@ -317,7 +323,7 @@ int main(int argc, char** argv)
             // Draw detected blobs as red circles.
             // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
             // the size of the circle corresponds to the size of blob
-            drawKeypoints(image_circle, keypoints, image_circle, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+            drawKeypoints(image_circle, keypoints, image_circle, Scalar(50,205,50), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
             keypoints[left_nail_idx].size = 0;
             drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );

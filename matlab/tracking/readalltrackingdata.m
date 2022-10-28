@@ -28,15 +28,19 @@ Samples = m.Data;
 xr = [Samples.x]';
 xl = [Samples.y]';
 %l_side = (0.0308 * xr - 17.114 - (0.0308 * xl - 4.4788)) * 2.54; % inch to cm (Rat 980)
-l_side = (0.0257 * (xr - xl) - 13.01) * 2.54; % inch to cm (Rat 1024)
+%l_side = (0.0257 * (xr - xl) - 13.01) * 2.54; % inch to cm (Rat 1024)
+l_side = (0.0291 * (xr - xl) - 12.298) * 2.54;  % inch to cm (Rat 1055)
 frame_no_side = [Samples.frame]';
 
-figure(1); hold on;
-l_side = movmedian(l_side,2000); % length of ditch
+figure(10); clf;
+plot(frame_no_side, movmedian(xr - xl, 300));
+
+figure(1); clf; hold on;
+l_side = movmedian(l_side,500); % length of ditch
 plot(frame_no_side,l_side,'r');
 %plot(frame_no_side,movmedian((0.0308 * xl - 4.4788) * 2.54,2000),'g'); % (Rat 980)
-plot(frame_no_side,movmedian(0.0257 * xl * 2.54,2000),'g'); % (Rat 1024)
-
+%plot(frame_no_side,movmedian(0.0257 * xl * 2.54,2000),'g'); % (Rat 1024)
+plot(frame_no_side,movmedian(0.0291 * xl * 2.54,500),'g'); % (Rat 1055)
 %% Top view
 Filename = fullfile(path,'..','top','tracking.dat');
 if ~isfile(Filename)
@@ -114,6 +118,9 @@ if isfile(Filename)
         xlabel('Frame No')
         ylabel('Horizontal position (m)')
         linkaxes([ax1 ax2],'x');
+        figure(6); clf
+        plot3(pos(:,1), pos(:,2), pos(:,3), '.')
+        axis equal
     end
 else
     pos = zeros(length(t),3);
