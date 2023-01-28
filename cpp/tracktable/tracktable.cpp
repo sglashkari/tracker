@@ -278,7 +278,7 @@ int main(int argc, char** argv)
             
             for (int i=right_nail_idx+1;i<keypoints.size();i++){
                 //if (keypoints[right_nail_idx].pt.y > (keypoints[0].pt.y + 10) || keypoints[right_nail_idx].pt.y < (keypoints[0].pt.y - 30) ) //|| keypoints[right_nail_idx].pt.x < (xr - 50))  // 2021-12-09 detecting the largest marker
-                if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 20) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
+                if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 5) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
                     right_nail_idx = i;
             }
 
@@ -287,6 +287,8 @@ int main(int argc, char** argv)
             //else if (keypoints[right_nail_idx].pt.x > (xrc + 50))
             //    flag = 0;
             else if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 20) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
+                flag = 0;
+            else if ((keypoints[right_nail_idx].pt.x > (xr + 75) || keypoints[right_nail_idx].pt.x < (xr - 75)) && (xr > 0))
                 flag = 0;
             else
                 flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
@@ -368,11 +370,11 @@ int main(int argc, char** argv)
     double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
     cout << endl;
     cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
-    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
-    cout << " milliseconds per frame." << endl;
+    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(2) << imageCnt/duration;
+    cout << " fps (frames per second)." << endl;
     cout << "Success rate was " << success << "%" << endl;
     log_file << "Success rate was " << success << "%" << endl;
-    log_file << "Processing speed: " << setprecision(3) << duration/imageCnt*1e3 << " milliseconds per frame." << endl;
+    log_file << "Processing speed: " << setprecision(2) << imageCnt/duration << " fps." << endl;
     log_file.close();
     data_file.close();
     cout << "Tracking data saved in " << data_filename << endl;

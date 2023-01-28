@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     double last_time;
     bool certain = false;
     
-    int fps = 30;
+    int fps = 30; //
     VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row),false); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4') // false for grayscale (isColor)
     VideoWriter video2(directory + "tracked-video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row));
 
@@ -444,11 +444,11 @@ int main(int argc, char** argv)
     auto finish = chrono::high_resolution_clock::now();
     double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
     cout << "Time taken by program is " << fixed  << duration << setprecision(6);
-    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
-    cout << " milliseconds per frame." << endl;
+    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(2) << imageCnt/duration;
+    cout << " fps (frames per second)." << endl;
     cout << "Success rate: " << success << "%" << endl;
     log_file << "Success rate: " << success << "%" << endl;
-    log_file << "Processing speed: " << setprecision(3) << duration/imageCnt*1e3 << " milliseconds per frame." << endl;
+    log_file << "Processing speed: " << setprecision(2) << imageCnt/duration << " fps." << endl;
     log_file.close();
     data_file.close();
     cout << "Tracking data saved in " << data_filename << endl;
