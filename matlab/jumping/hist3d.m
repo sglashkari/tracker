@@ -4,7 +4,7 @@ x =  posi.p(:,1);
 y =  posi.p(:,2);
 z =  posi.p(:,3);
 
-c = 18;
+c = 15;
 
 [~,Xedges] = histcounts(x,'BinWidth',3);
 [~,Yedges] = histcounts(y,'BinWidth',3);
@@ -27,6 +27,7 @@ Z = movmean(Zedges,2); Z = Z(2:end);
 figure
 scatter3(X(:),Y(:),Z(:),N(:)/10+eps,'MarkerFaceColor', [0.7 0 0.7])
 view([70 14])
+title('Occupancy')
 axis equal
 
 M = zeros(length(Xedges)-1,length(Yedges)-1,length(Zedges)-1);

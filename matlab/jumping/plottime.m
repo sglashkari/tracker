@@ -43,58 +43,52 @@ no_states = length(unique([lap.status]));
 
 %% CSC
 %tic
-sh=cluster(cluster_no(1)).sh;
-csc_filename=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP32.ncs'); % use plotcsc to optimize it
-[time,data] = read_bin_csc(csc_filename);
-for l=[lap([lap.dir]==direction).no]  % only the desired direction
-    if ~showCSC
-        break;
-    end
+for l=CSCLaps
     %     if lap(l).status ~= "jump"
     %         continue;
     %     end
     figure(100+l);
     legendCellModified = legendCell;
-    
-    idx = time >= lap(l).t_interest + timerange(1) & time <= lap(l).t_interest + timerange(2);
-    timecsc = time(idx);
-    lfp = data(idx);
-    [theta, phase] = filterlfp(timecsc,lfp);
-    
-    idx = pos.t >= lap(l).t_interest + timerange(1) & pos.t <= lap(l).t_interest + timerange(2);
+
+    % position
     ax1 = subplot(6,1,1); hold on
-    plot(pos.t(idx)-lap(l).t_interest,pos.x(idx));
+    idx = pos.t >= lap(l).t_interest + timerange(1) & pos.t <= lap(l).t_interest + timerange(2);
+    plot(pos.t(idx)-lap(l).t_interest,pos.x(idx),'LineWidth',1);
     ylabel('Horizontal position (cm)')
     title(['lap ' num2str(l) ', at the time of ' t_reference ', ' direction 'ward ' convertStringsToChars(lap(l).status)]);
     
-    
+    % speed
     ax2 = subplot(6,1,2); hold on;
     %plot(pos.t(idx)-lap(l).t_interest,30*ones(size(pos.t(idx))),'k');
     plot(timerange, [30 30],'k','LineWidth',0.1);
     idx = posi.t >= lap(l).t_interest + timerange(1) & posi.t <= lap(l).t_interest + timerange(2);
-    plot(posi.t(idx)-lap(l).t_interest,abs(posi.filt.vx(idx)),'m');
+    plot(posi.t(idx)-lap(l).t_interest,abs(posi.filt.vx(idx)),'m','LineWidth',1);
     
     ylabel('Horizontal Speed (cm/s)')
-    ylim([0 300])
+    ylim([0 400])
     
     % plot a line for every time the rat cross the edges
     for i=1:length(lap(l).t_cross)
         plot(repmat(lap(l).t_cross(i),1,2)-lap(l).t_interest, ylim,lap(l).cross_color,'LineWidth',2);
     end
     
-    idx = daq.t >= lap(l).t_interest + timerange(1) & daq.t <= lap(l).t_interest + timerange(2);
+    % force
     ax3 = subplot(6,1,3); hold on
+    idx = daq.t >= lap(l).t_interest + timerange(1) & daq.t <= lap(l).t_interest + timerange(2);
     plot(daq.t(idx)-lap(l).t_interest,daq.filt.loadcell(:,idx));
     ylabel('Force (N)')
     
+    % Pitch
     ax4 = subplot(6,1,4); hold on
     idx = pos.t >= lap(l).t_interest + timerange(1) & pos.t <= lap(l).t_interest + timerange(2);
-    plot(pos.t(idx)-lap(l).t_interest, pos.p(idx,3),'.');
-    ylim([-30 15])
-    ylabel('Elevation (cm)')
+    plot(pos.t(idx)-lap(l).t_interest, pos.pitch(idx),'LineWidth',1);
+    %ylim([-30 15])
+    ylabel('Pitch (deg)')
     
+    % Phase
     ax5 = subplot(6,1,5); hold on
-    plot(timecsc-lap(l).t_interest,phase,'Color','#ADD8E6')
+    idx = csc.t >= lap(l).t_interest + timerange(1) & csc.t <= lap(l).t_interest + timerange(2);
+    plot(csc.t(idx)-lap(l).t_interest, csc.phase(idx),'Color','#ADD8E6','LineWidth',1)
     % theta phase
     for c=cluster_no
         %idx = [cluster(c).lap]==l;
@@ -110,11 +104,13 @@ for l=[lap([lap.dir]==direction).no]  % only the desired direction
     ylim([-180 180])
     ylabel('Phase (Degrees)')
     
+    % Theta
     ax6 = subplot(6,1,6);
-    plot(timecsc-lap(l).t_interest,lfp * 1e6,'Color','#D0D0D0')
+    idx = csc.t >= lap(l).t_interest + timerange(1) & csc.t <= lap(l).t_interest + timerange(2);
+    plot(csc.t(idx)-lap(l).t_interest,csc.lfp(idx) * 1e6,'Color','#D0D0D0','LineWidth',1)
     hold on;
-    plot(timecsc-lap(l).t_interest,theta *1e6,'r');
-    ylim([-400 400])
+    plot(csc.t(idx)-lap(l).t_interest,csc.theta(idx) * 1e6,'r','LineWidth',1);
+    ylim([-800 800])
     ylabel('Theta (\muV)')
     xlabel('Time (sec)')
     
@@ -122,7 +118,10 @@ for l=[lap([lap.dir]==direction).no]  % only the desired direction
     linkaxes([ax1 ax2 ax3 ax4 ax5 ax6],'x')
     xlim(timerange)
     
-    saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.png']))
+%     saveas(gcf,fullfile(exp_directory, 'Analysis',['CSC-' direction '-cl_' mat2str(cluster_no) '-lap_' num2str(l) '.svg']))
+end
+if showCSC
+    return;
 end
 %figure(100+l+1);
 %toc
@@ -181,7 +180,7 @@ for c = cluster_no
     f = figure(1001); hold on
     i = 0;
     ax = [];
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             flag = 0;
             i = i + 1;
@@ -272,7 +271,7 @@ for c = cluster_no
     f = figure(1003); hold on;
     i = 0;
     ax = [];
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             flag = 0;
             i = i + 1;
@@ -304,13 +303,13 @@ for c = cluster_no
             if flag == 0
                 if i == 1
                     legendCellModified21(c)="";
-                else
+                elseif i == 2
                     legendCellModified22(c)="";
                 end
             end
             if i == 1
                 h21 = [h21 h];
-            else
+            elseif i == 2
                 h22 = [h22 h];
             end
             ylabel('Phase (angle)')
@@ -327,15 +326,15 @@ for c = cluster_no
 end
 
 figure(1000); hold on
-saveas(gcf,fullfile(exp_directory, 'Analysis',['LapByLap-Pos-cl' mat2str(cluster_no) '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['LapByLap-Pos-cl' mat2str(cluster_no) '.svg']))
 
 figure(1001); hold on
 set(gcf, 'Position', [0 100 1800 700]);
 legend(h1, legendCell(legendCell~=""))
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Pos-cl' mat2str(cluster_no) '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Pos-cl' mat2str(cluster_no) '.svg']))
 
 figure(1002); hold on
-saveas(gcf,fullfile(exp_directory, 'Analysis',['LapByLap-Time-cl' mat2str(cluster_no) '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['LapByLap-Time-cl' mat2str(cluster_no) '.svg']))
 
 figure(1003); hold on;
 set(gcf, 'Position', [0 0 1800 700]);
@@ -346,9 +345,9 @@ legend(h21,legendCellModified21(legendCellModified21~=""))
 subplot(2,2,2);
 legend(h22,legendCellModified22(legendCellModified22~=""))
 
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Phase-Time-cl' mat2str(cluster_no) '.svg']))
 
-%% Rat-map with velocity filter (for stationary or moving frame)
+%% Rat-map with speed filter (for stationary or moving frame)
 N = length(cluster_no);
 M = min([10 N]); % groups of 10 max
 figure(2001); clf;
@@ -357,7 +356,7 @@ i = 0;
 j = 1;
 for c = cluster_no
     
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             i = i+1;
             idx = posi.status==state & posi.dir==dir & abs(posi.s) >= s_thresh & posi.lap > 0;
@@ -371,6 +370,8 @@ for c = cluster_no
             hist.ratemap = hist.cluster ./ (hist.posi + eps); % adding eps to avoid division by zero
             a(i) = subplot(M*no_states,2,i);
             histogram('BinCounts', hist.ratemap, 'BinEdges', hist.edges, 'FaceColor',colors(c),'FaceAlpha',0.8); hold on; %rate map histogram (20% transparent)
+            % Compute mean and standard deviation.
+            hhh = hist;
             if N == M % for small sets
                 ylabel('Spike count')
                 title(['#' num2str(c) ':' cluster(c).region ', ' convertStringsToChars(dir) 'ward ' convertStringsToChars(state)])
@@ -389,7 +390,7 @@ for c = cluster_no
             if mod(i,2*no_states)==0
                 linkaxes([a(i) a(i-1) a(i-2) a(i-3)],'y')
                 ylim(max([0 2],ylim)); % start from 0 when no cell rate map is null
-                states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
+                states = repmat(sort(unique([lap.status]), 'descend'),2,1); % alternating between ditch and jump for gaps
                 states = states(end:-1:1); % correcting the order
                 directions = ["right" "left" "right" "left"]; % alternating between left and right
                 for k=i:-1:i-3
@@ -412,7 +413,7 @@ for c = cluster_no
                 xlabel('Horizontal position (cm)')
                 set(gcf, 'Position', [0 0 1800 300+200*N*no_states]);
                 sgtitle(['Directional ratemap ' num2str(j) ', ' x_reference ' frame of ref (speed filtered: s >= ' num2str(s_thresh) ' cm/s)']);
-                saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap_' num2str(j) '-cl' mat2str(cluster_no) '_' x_reference '.png']));
+                saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_ratemap_' num2str(j) '-cl' mat2str(cluster_no) '_' x_reference '.svg']));
                 i = 0;
                 j = j + 1;
                 if c < cluster_no(end)
@@ -436,7 +437,7 @@ figure(3000); clf;
 i = 0;
 for c = cluster_no
     
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             i = i+1;
             
@@ -500,29 +501,34 @@ linkaxes(a,'x')
 zoom xon
 xlim(timerange)
 sgtitle(['Directional time histogram (spikes per bin per lap), at the time of ' t_reference]);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_time_histogram-cl' mat2str(cluster_no) '_' t_reference '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_time_histogram-cl' mat2str(cluster_no) '_' t_reference '.svg']))
 
 %% X-Z plot
 figure(4000); clf; a = [];
 i = 0;
 for c = cluster_no
     
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             i = i+1;
             
             a(i) = subplot(no_states,2,i); hold on
+            
+            if c == cluster_no(1)
+                idx = posi.status==state & posi.dir==dir & abs(posi.s) >= s_thresh;
+                dx = [lap(posi.lap(idx)).dx_interest];
+                dx = reshape(dx,[],1);
+                h = plot(posi.p(idx,1)+dx,posi.p(idx,3),'.', 'MarkerSize',0.2);
+                set(h, 'Color', '#D0D0D0');
+            end
+            
             idx = [cluster(c).status]==state & [cluster(c).dir]==dir & abs([cluster(c).s]) >= s_thresh;
             dx = [lap(cluster(c).lap(idx)).dx_interest];
             dx = reshape(dx,[],1);
             %             p = plot(cluster(c).p(idx,1)+dx,cluster(c).p(idx,3),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c)); hold on
             s = scatter(cluster(c).p(idx,1)+dx,cluster(c).p(idx,3),'o','MarkerEdgeColor','black', 'MarkerFaceColor', colors(c)); hold on
             alpha(s,opacity)
-            %             idx = pos.status==state & pos.dir==dir & abs(pos.s) >= s_thresh;
-            %             dx = [lap(pos.lap(idx)).dx_interest];
-            %             dx = reshape(dx,[],1);
-            %             h = plot(pos.p(idx,1)+dx,pos.p(idx,3),'.', 'MarkerSize',0.2);
-            %             set(h, 'Color', '#D0D0D0');
+
             
             axis equal
             %             title(['#' num2str(c) ':' cluster(c).region ', Place field (' convertStringsToChars(dir) 'ward ' convertStringsToChars(state) ')'])
@@ -536,12 +542,12 @@ for c = cluster_no
                 linkaxes([a(i) a(i-1) a(i-2) a(i-3)])
                 ylim([-35 20])
                 if isZoom
-                    xlim([-50 20+max([lap.gap_length])]+max([lap.dx_interest]))
+                    xlim(exp.gap_edge_in_px/exp.ppcm +[-50 20+max([lap.gap_length])]+max([lap.dx_interest]))
                 else
                     xrange = xlim;
-                    xlim([min(xrange(1),-50) max(xrange(2),20+max([lap.gap_length])+max([lap.dx_interest]))])
+                    xlim(exp.gap_edge_in_px/exp.ppcm +[min(xrange(1),-50) max(xrange(2),20+max([lap.gap_length])+max([lap.dx_interest]))])
                 end
-                states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
+                states = repmat(sort(unique([lap.status]), 'descend'),2,1); % alternating between ditch and jump for gaps
                 states = states(end:-1:1); % correcting the order
                 directions = ["right" "left" "right" "left"]; % alternating between left and right
                 for j=i:-1:i-3
@@ -550,15 +556,16 @@ for c = cluster_no
                     for l=[lap([lap.dir]==directions(i-j+1) & [lap.status]==states(i-j+1)).no]  % only the desired direction and state
                         % gap range
                         lim = xlim;
-                        plot([lim(1) lap(l).dx_interest], [0 0],lap(l).cross_color,'LineWidth',0.25);
-                        plot([lap(l).dx_interest lap(l).dx_interest], [-depth 0],lap(l).cross_color,'LineWidth',0.25);
-                        plot(repmat(lap(l).gap_length+lap(l).dx_interest,1,2), [-depth 0],lap(l).cross_color,'LineWidth',0.25);
-                        plot([lap(l).dx_interest lap(l).gap_length+lap(l).dx_interest], [-depth -depth],lap(l).cross_color,'LineWidth',0.25);
-                        plot([lap(l).gap_length+lap(l).dx_interest lim(2)+lap(l).dx_interest], [0 0],lap(l).cross_color,'LineWidth',0.25);
+                        po = exp.gap_edge_in_px/exp.ppcm +lap(l).dx_interest;
+                        plot([0 po], [0 0],lap(l).cross_color,'LineWidth',0.25);
+                        plot(exp.gap_edge_in_px/exp.ppcm +[lap(l).dx_interest lap(l).dx_interest], [-depth 0],lap(l).cross_color,'LineWidth',0.25);
+                        plot(exp.gap_edge_in_px/exp.ppcm +repmat(lap(l).gap_length+lap(l).dx_interest,1,2), [-depth 0],lap(l).cross_color,'LineWidth',0.25);
+                        plot(exp.gap_edge_in_px/exp.ppcm +[lap(l).dx_interest lap(l).gap_length+lap(l).dx_interest], [-depth -depth],lap(l).cross_color,'LineWidth',0.25);
+                        plot(exp.gap_edge_in_px/exp.ppcm +[lap(l).gap_length+lap(l).dx_interest lim(2)+lap(l).dx_interest], [0 0],lap(l).cross_color,'LineWidth',0.25);
                     end
                     %Reverse the stacking order so that the patch overlays the line
                     chi=get(gca, 'Children');
-                    set(gca, 'Children',flipud(chi));
+                    %set(gca, 'Children',[chi(1) flipud(chi(2:end))]); % keep the traces in the background
                 end
                 i=i-2*no_states; % overlay
             end
@@ -570,14 +577,14 @@ linkaxes(a)
 %toc
 set(gcf, 'Position', [0 0 1800 300+200*no_states]);
 sgtitle(['Elevation versus Horizontal position, ' x_reference ' frame of ref (speed filtered: s >= ' num2str(s_thresh) ' cm/s)']);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Z-X-cl' mat2str(cluster_no) '_' x_reference '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Z-X-cl' mat2str(cluster_no) '_' x_reference '.svg']))
 
 %% 3D plot
 figure(4001); clf; a = [];
 i = 0;
 for c = cluster_no
     
-    for state = unique([lap.status])
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             i = i+1;
             
@@ -611,12 +618,12 @@ for c = cluster_no
                 view([0.2 -1 0.5])
                 zlim([-35 20])
                 if isZoom
-                    xlim([-50 50+max([lap.gap_length])])
+                    xlim(exp.gap_edge_in_px/exp.ppcm +[-50 50+max([lap.gap_length])])
                 else
                     xrange = xlim;
-                    xlim([min(xrange(1),-50) max(xrange(2),50+max([lap.gap_length]))])
+                    xlim(exp.gap_edge_in_px/exp.ppcm +[min(xrange(1),-50) max(xrange(2),50+max([lap.gap_length]))])
                 end
-                states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
+                states = repmat(sort(unique([lap.status]), 'descend'),2,1); % alternating between ditch and jump for gaps
                 states = states(end:-1:1); % correcting the order
                 directions = ["right" "left" "right" "left"]; % alternating between left and right
                 for j=i:-1:i-3
@@ -627,7 +634,7 @@ for c = cluster_no
                     z(x==1)=nan;
                     z(x==floor(max([lap.gap_length]+[lap.dx_interest])))=nan;
                     hold on
-                    surf(x,y,z,'FaceAlpha',0.25,'EdgeAlpha',0.1,'FaceColor','#D0D0D0'); hold on
+                    surf(exp.gap_edge_in_px/exp.ppcm + x,y,z,'FaceAlpha',0.25,'EdgeAlpha',0.1,'FaceColor','#D0D0D0'); hold on
                     
                     
                 end
@@ -653,7 +660,7 @@ view([-13 7])
 %toc
 set(gcf, 'Position', [0 0 1800 300+200*no_states]);
 sgtitle(['3D place fields, ' x_reference ' frame of ref (speed filtered: s >= ' num2str(s_thresh) ' cm/s)']);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['3D-cl' mat2str(cluster_no) '_' x_reference '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['3D-cl' mat2str(cluster_no) '_' x_reference '.svg']))
 
 %% phase histogram
 
@@ -665,8 +672,8 @@ N = length(cluster_no);
 figure(5000); clf;
 i = 0;
 for c = cluster_no
-    ylimmax = 0;
-    for state = unique([lap.status])
+    rlimmax = 0;
+    for state = sort(unique([lap.status]), 'descend')
         for dir = ["left" "right"]
             i = i+1;
             
@@ -678,48 +685,24 @@ for c = cluster_no
             hist.phase_hist = hist.cluster / (hist.phase_bin_size*n) ; % spikes per bin per lap
             
             a(i) = subplot(N*no_states,2,i);
-            h = histogram('BinCounts', hist.phase_hist, 'BinEdges', hist.phase_edges, 'FaceColor',colors(c),'FaceAlpha',0.8); hold on; %rate map histogram (20% transparent)
-            
-            ylabel('Spike count');
+            h = polarhistogram('BinCounts', hist.phase_hist, 'BinEdges', hist.phase_edges*pi/180, 'FaceColor',colors(c),'FaceAlpha',0.8,'Normalization','count'); hold on; %rate map histogram (20% transparent)
             title(['#' num2str(c) ':' cluster(c).region ', ' convertStringsToChars(dir) 'ward ' convertStringsToChars(state)])
-            if i >= 2*N*no_states-1
-                xlabel('Phase (deg)')
-            end
+
             if nnz(idx)>0
-                ylimmax = max([ylimmax, ylim]);
-            end
-            if mod(i,2*no_states)==0
-                linkaxes([a(i) a(i-1) a(i-2) a(i-3)],'y')
-                ylim([0, ylimmax]);
-%                 %ylim(max([0 5],ylim)); % start from 0 when no cell rate map is null
-%                 states = repmat(unique([lap.status]),2,1); % alternating between ditch and jump for gaps
-%                 states = states(end:-1:1); % correcting the order
-%                 directions = ["right" "left" "right" "left"]; % alternating between left and right
-                %                 for j=i:-1:i-3
-                %                     subplot(N*no_states,2,j);
-                %
-                %                     for l=[lap([lap.dir]==directions(i-j+1) & [lap.status]==states(i-j+1)).no]  % only the desired direction and state
-                %
-                %
-                %                         for k=1:length(lap(l).t_cross)
-                %                             plot(repmat(lap(l).t_cross(k),1,2)-lap(l).t_interest, ylim,lap(l).cross_color,'LineWidth',0.15);
-                %                         end
-                %                     end
-                %
-                %                     % Reverse the stacking order so that the patch overlays the line
-                %                     chi=get(gca, 'Children');
-                %                     set(gca, 'Children',flipud(chi));
-                %                 end
+                rlimmax = max([rlimmax, rlim]);
             end
             
+        end
+    end
+    if mod(i,2*no_states)==0
+        for j=i:-1:i-3
+            subplot(N*no_states,2,j);
+            rlim([0, rlimmax]);
         end
     end
 end
 
 %toc
-set(gcf, 'Position', [0 0 1800 300+200*N*no_states]);
-linkaxes(a,'x')
-%zoom xon
-xlim([-180 180])
+set(gcf, 'Position', [0 0 1200 300+400*N*no_states]);
 sgtitle(['Directional phase histogram (spikes per bin per lap), at the time of ' t_reference '(speed filtered: s >= ' num2str(s_thresh) ' cm/s)']);
-saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_phase_histogram-cl' mat2str(cluster_no) '_' t_reference '.png']))
+saveas(gcf,fullfile(exp_directory, 'Analysis',['Directional_phase_histogram-cl' mat2str(cluster_no) '_' t_reference '.svg']))

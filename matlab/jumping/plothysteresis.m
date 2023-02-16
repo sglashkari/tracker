@@ -1,14 +1,14 @@
 %%% Hysteresis calculations and plots
 % SGL 2022-02-16
 clc; clear; close all
-[datafile,exp_directory] = uigetfile(fullfile('D:\Analysis', 'analyzed_data.mat'), 'Select Data File');
+[datafile,exp_directory] = uigetfile(fullfile('E:\Rat1068\Analysis', 'processed_data.mat'), 'Select Data File');
 if isequal(datafile, 0)
     error('Data file was not selected!')
 end
 mat_filename = fullfile(exp_directory, datafile);
 load(mat_filename, 'lap','pos');
 start = tic;
-min_passage = 4;
+min_passage = 2;
 %% 
 lap(1).gap_status = "increase";
 for l=2:length(lap)
@@ -33,7 +33,7 @@ saveas(gcf,fullfile(exp_directory, 'Analysis',['GapLength-Time.png']))
 %% all 4 combinations
 Legend=cell(4,1);
 i = 0;
-hist.edges = 10:2:40;
+hist.edges = 10:2:80;
 for increment = ["increase" "decrease"]
     for dir = ["right" "left"]
         i = i + 1;
@@ -59,14 +59,14 @@ end
 for i=1:2
     subplot(2,1,mod(i-1,2)+1)
 ylim([-0.1 1.1]);
-xlim([15 36])
+%xlim([15 36])
 legend(["increase" "decrease"]);
 end
 
 %% lumped version
 figure(3); clf
 i = 0;
-hist.edges = 10:2:40;
+hist.edges = 10:2:80;
 for increment = ["increase" "decrease"]
     i = i + 1;
     idx = ([lap.gap_status]==increment) & ([lap.status] == 'jump');
@@ -85,5 +85,5 @@ for increment = ["increase" "decrease"]
     sum(hist.passage)
 end
 ylim([-0.1 1.1]);
-xlim([14 35])
+%xlim([14 35])
 legend(["increase" "decrease"]);

@@ -32,28 +32,35 @@ function [lap, idx_analysis] = lapdetector(exp_directory, varargin)
 %           lap = lapdetector(exp_directory, xmax, mode, time_of_analysis)
 %
 %       All inputs and outputs:
-%           [lap, idx_analysis] = lapdetector(exp_directory, xmax, mode, time_of_analysis)
+%           [lap, idx_analysis] = lapdetector(exp_directory, mode, time_of_analysis)
 %
 %   See also WINCLUST2MAT, ANALYZEDATA.
 %
-%   SGL 2022-02-09 (originally 2021-01-31, 2021-03-28)
+%   Date 2023-01-01 (originally 2021-01-31, 2021-03-28, 2022-02-09)
+%   
+%   Author Shahin G Lashkari
 %
-clc; close all
 
 %% Variable-length input argument parsing
 if nargin < 1
-    [~,exp_directory] = uigetfile(fullfile('D:\Analysis', 'data.mat'), 'Select Data File');
+    clc; close all
+    answer = inputdlg({'Rat', 'Date'},'Enter the rat number and the date',[1 30],{'1068', '2022-12-20'});
+    rat_no = answer{1};
+    date_str = answer{2};
+    [mat_filename, exp_directory] = uigetfile(['E:\Rat' rat_no '\Analysis\' date_str '\raw_data.mat'], 'Select Data File');
+else
+    mat_filename = 'raw_data.mat';
 end
 
-mat_filename = fullfile(exp_directory, 'data.mat');
+mat_filename = fullfile(exp_directory, mat_filename);
 if isfile(mat_filename)
     clearvars -except mat_filename exp_directory varargin;
-    load(mat_filename, 'pos', 'exp', 'ppcm','daq')
+    load(mat_filename, 'pos', 'exp','daq')
 else
     error('Data file is not valid!')
 end
 
-xmax = 2048/ppcm;
+xmax = exp.xmax;
 mode = [-inf inf]; % the whole lap
 time_of_analysis = [pos.t(1) pos.t(end)];
 time_exclusion = [];
@@ -61,11 +68,14 @@ time_exclusion = [];
 x_thresh = [133 138];
 v_thresh = 40;
 include_reward_perch_time = false;
-
+if exp.rat_no > 980
+    x_thresh = [130 160] ;
+end
+if exp.name == "16-Dec-2022"
+    x_thresh = [130 160] ;
+end
 for argidx = 1:2:nargin-1
     switch varargin{argidx}
-        case 'xmax'
-            xmax = varargin{argidx+1};
         case 'mode'
             mode = varargin{argidx+1};
         case 'time'
@@ -123,7 +133,7 @@ vx = filterlfp(t, vx, 0.01, 1); % cm/sec
 
 plot(pos.t, pos.x, '.b', t, x, '.k')
 ylim([0 xmax])
-% plot(t,abs(vx))
+plot(t,abs(vx))
 %% jump detection
 
 daq.ditch = double(daq.loadcell(2,:)>1);
@@ -197,11 +207,18 @@ for i = 1:1:N-2
     if ~isempty(xl(xl > (xmax - 50))) && ~include_reward_perch_time
         tp = tl(xl > (xmax - 50));
         xp = xl(xl > (xmax - 50));
-        [~, peak_idx] = findpeaks(xp);
-        x_right(l) = xp(peak_idx(1));
-        t_right(l) = tp(peak_idx(1));
-        x_right(l+1) = xp(peak_idx(end));
-        t_right(l+1) = tp(peak_idx(end));
+        if numel(xp) >= 3
+            [~, peak_idx] = findpeaks(xp);
+            x_right(l) = xp(peak_idx(1));
+            t_right(l) = tp(peak_idx(1));
+            x_right(l+1) = xp(peak_idx(end));
+            t_right(l+1) = tp(peak_idx(end));
+        else
+            x_right(l) = xp(1);
+            t_right(l) = tp(1);
+            x_right(l+1) = xp(end);
+            t_right(l+1) = tp(end);
+        end
     end
     
     [x_left(l), idx] = min(xl);
@@ -313,14 +330,19 @@ if nargout ~= 0
     if ~exist(analysis_directory, 'dir')
         mkdir(analysis_directory)
     end
-    saveas(gcf,fullfile(analysis_directory,'overall_view.svg'));
+    saveas(gcf,fullfile(analysis_directory,'overall_view.fig'));
 else
     format longG
     disp(exp.name);
     disp('Frame numbers: ')
+    fprintf('mkdir -p frames; rsync -tvrPh top/frame-{')
     for l=1:length(lap)
-        fprintf('%d,',lap(l).frame);
+        fprintf('%d',lap(l).frame);
+        if l ~= length(lap)
+            fprintf(',');
+        end
     end
+    fprintf('}.pgm frames/')
     fprintf('\n')
     fprintf('Maze Times: \n')
     disp([tmi tmf])

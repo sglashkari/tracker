@@ -2,45 +2,55 @@
 % The data include the occupancy and histogram of the spikes and the
 % sequential firing of multiple spikes before jumping
 %
-%   See also PLOTRATEMAP, PLOTTIME, PLOTHYSTERESIS.
+%   See also LAPDETECTOR, PLOTRATEMAP, PLOTTIME, PLOTHYSTERESIS, PLOTCSC.
 %
-% SGL 2022-01-26 (originally 2021-01-31)
+% 	Date 2023-01-01 (originally 2021-01-31, 2022-01-26)
+%   
+%   Author Shahin G Lashkari
 %
 clc; clear; close all;
-[datafile,exp_directory] = uigetfile(fullfile('D:\Analysis', 'data.mat'), 'Select Data File');
+answer = inputdlg({'Rat', 'Date'},'Enter the rat number and the date',[1 30],{'1068', '2022-12-20'});
+rat_no = answer{1};
+date_str = answer{2};
+%% Selecting the appropriate files
+[datafile,exp_directory] = uigetfile(['E:\Rat' rat_no '\Analysis\' date_str '\raw_data.mat'],'Select Data File');
 if isequal(datafile, 0)
     error('Data file was not selected!')
 end
 mat_filename = fullfile(exp_directory, datafile);
-load(mat_filename,'pos','cluster','exp','ppcm', 'daq');
+load(mat_filename,'pos','cluster','exp', 'daq');
 
-frames = dir(fullfile(exp_directory,'frames','*.pgm'));
+[~, framesPath] = uigetfile(['E:\Rat' rat_no '\TrackingData\' date_str '\frames\*.pgm'],'Select a pgm File for Frame');
+frames = dir(fullfile(framesPath,'*.pgm'));
 img_filename = fullfile(frames(1).folder, frames(1).name);
 
 % for phase calculations
-% [csc_filename,csc_directory] = uigetfile(fullfile(exp_directory,'*.ncs'),'Select a CSC File');
-% if isequal(csc_filename, 0)
-%     error('CSC file was not selected!')
-% end
-% csc_filename = fullfile(csc_directory, csc_filename);
+csc_filename = fullfile(exp_directory, 'LFP','LFP.ncs'); % use apbin2lfp and plotcsc to optimize it
 
+% Colors: https://sashamaps.net/docs/resources/20-colors/
 colors = ["#e6194B" "#3cb44b" "#ffe119"  "#f58231" "#42d4f4" "#f032e6" "#fabed4" "#469990" "#9A6324"];
 colors = repmat(colors', ceil(length(cluster)/length(colors))); % repeat the colors to match the total number of clusters
 
 img = imread(img_filename);
-xmax = ceil(size(img,2)/ppcm);
-
+exp.xmax = ceil(size(img,2)/exp.ppcm);
 start = tic;
 
 %% Exclusions
 % MODIFY FOR EACH DAY!!!
 %
+
+cluster_exlude = find([cluster.size] >  max(std([cluster.size]),1e4)); % exclude one std dev above mean
+% cluster_exlude = find(isoutlier([cluster.size]));
 if exp.name == "21-Dec-2021"
-    cluster_exlude = [33];
-    %colors([17 18 22 23 28 29 31]) = colors(1:7);
+    cluster_exlude = [33 48];
     colors(18)="#f58231";
     colors(28)="#3cb44b";
 end
+
+figure(10); clf
+plot([cluster.no],[cluster.size], '*b'); hold on
+plot(xlim, std([cluster.size])*[1 1], '--k');
+plot([cluster(cluster_exlude).no],[cluster(cluster_exlude).size], 'pr');
 
 % Excluding some clusters (e.g. inter-neurons) -- not a good idea
 if ~isempty(cluster_exlude)
@@ -48,14 +58,13 @@ if ~isempty(cluster_exlude)
     disp(['clusters ' num2str(cluster_exlude) ' excluded.']);
 end
 
-if exp.rat_no == 980
-    gap_edge_in_px = 888.651; % the right edge of the edge in pixels (change for each setup!!!)
-else
-    error('specify the right edge of the edge in pixels!');
+for c=1:numel(cluster)
+    cluster(c).no = c;
 end
+
 %% Plotting the position vs time and marking neural recording times,
 % maze times and lap detection times
-
+disp('Detecting laps ...')
 figure(1)
 [lap, idx_analysis] = lapdetector(exp_directory);
 set(gcf, 'Position', [100 100 1700 1175]);
@@ -78,10 +87,16 @@ end
 
 for l = 1:length(lap)
     % Adding gap size to each lap
-    lap(l).gap = gap_edge_in_px/ppcm + [0 pos.len(pos.t == lap(l).t_jump)];  % two edges of the gap
+    lap(l).gap = exp.gap_edge_in_px/exp.ppcm + [0 pos.len(pos.t == lap(l).t_jump)];  % two edges of the gap
     lap(l).gap_length = diff(lap(l).gap);
     if exp.name == "21-Dec-2021"
-        lap(l).gap_depth = 23.2; % cm, 9.125 in (change for each day) !!!
+        lap(l).gap_depth = 2.54 * 9.125; % cm, 9.125 in
+    elseif exp.name == "20-Dec-2022"
+        lap(l).gap_depth = 2.54 * 10.5; % cm, 10.5 in
+    elseif exp.name == "09-Nov-2022"
+        lap(l).gap_depth = 2.54 * 10; % cm, 10 inch
+    elseif exp.name == "16-Dec-2022"
+        lap(l).gap_depth = 2.54 * 10.5; % cm, 10.5 inch    
     else
         error('specify the gap depth');
     end
@@ -124,7 +139,7 @@ for l=[lap([lap.dir]=="right").no]
     subplot(N,2,i);
     plot(pos.x(pos.lap == l), pos.t(pos.lap == l), 'b')
     hold on
-    xlim([0 xmax])
+    xlim([0 exp.xmax])
     ylim(lap(l).t)
     title(['rightward lap no ' num2str(lap(l).no)])
     i = i + 2;
@@ -136,18 +151,20 @@ for l=[lap([lap.dir]=="left").no]
     subplot(N,2,i);
     plot(pos.x(pos.lap == l), pos.t(pos.lap == l), 'b')
     hold on
-    xlim([0 xmax])
+    xlim([0 exp.xmax])
     ylim(lap(l).t)
     title(['leftward lap, lap no ' num2str(lap(l).no)])
     i = i + 2;
 end
 
 %% interpolation at each lap
+disp('Interpolation ...')
 posi.dt = 1/1000; % interpolation 1 kHz
 posi.t = [];
 posi.x = [];
 posi.y = [];
 posi.p = [];
+posi.dx = [];
 posi.vx = [];
 posi.vy = [];
 posi.lap = [];
@@ -174,6 +191,7 @@ for l = 1:length(lap)
     interp.x = interp1(pos.t, pos.x, interp.t);
     interp.y = interp1(pos.t, pos.y, interp.t);
     interp.p = interp1(pos.t, pos.p, interp.t);
+    
     % interpolation for velocity
     interp.vx = interp1(pos.t, pos.vx, interp.t);
     interp.vy = interp1(pos.t, pos.vy, interp.t);
@@ -229,6 +247,14 @@ for l = 1:length(lap)
 end
 posi.s = vecnorm([posi.vx; posi.vy]);
 posi.filt.av = vecnorm([posi.filt.avx; posi.filt.avy; posi.filt.avz]);  % angular speed in deg/sec
+
+% x correction for moving frame of referene 
+posi.dx = zeros(size(posi.x));
+for l = 1:length(lap)
+   idx = posi.lap == l;
+   posi.dx(idx) = lap(l).corr;
+   
+end
 %% plotting the occupancy
 figure(4); clf;
 l = 55; %l = randi([1 length(lap)]);
@@ -239,22 +265,25 @@ img = medfilt2(img);
 imshow(img);
 figure(4)
 hold on
-h = quiver(posi.x * ppcm,posi.y * ppcm,posi.vx * ppcm,posi.vy * ppcm,2);
-plot(repmat(lap(l).gap(1),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2); % lap(l).cross_color
-plot(repmat(lap(l).gap(2),2,1)* ppcm, ylim* ppcm,'y','LineWidth',2); % lap(l).cross_color
+h = quiver(posi.x * exp.ppcm,posi.y * exp.ppcm,posi.vx * exp.ppcm,posi.vy * exp.ppcm,2);
+plot(repmat(lap(l).gap(1),2,1)* exp.ppcm, ylim* exp.ppcm,'y','LineWidth',2); % lap(l).cross_color
+plot(repmat(lap(l).gap(2),2,1)* exp.ppcm, ylim* exp.ppcm,'y','LineWidth',2); % lap(l).cross_color
 title('Occupancy with Velocity')
 %title(['Rat ' convertStringsToChars(lap(l).status) 'ing ' convertStringsToChars(lap(l).dir) 'ward'])
 saveas(gcf,[exp_directory filesep 'Analysis' filesep 'occupancy_with_velocity.jpg'])
 
 %% Directional Speed 
+s_thresh = 0; % cm/s
+states = sort(unique([lap.status]), 'descend');
+no_states = length(states);
 for j=0:1
     figure(5+j); clf;
     i = 0;
     a = [];
-    for state = unique([lap.status])
+    for state = states
         for dir = ["left" "right"]
             i = i+1;
-            idx = pos.status==state & pos.dir==dir & pos.s >= s_thresh & pos.s <= 250;
+            idx = pos.status==state & pos.dir==dir & pos.s >= s_thresh & pos.s <= 450;
             a(i) = subplot(no_states,2,i);
             if j==0
                 plot(pos.x(idx),pos.s(idx),'.')
@@ -273,7 +302,7 @@ for j=0:1
     set(gcf, 'Position', [0 0 1800 300+200*no_states]);
     linkaxes(a,'xy')
     zoom xon
-    xlim([0 xmax])
+    xlim([0 exp.xmax])
     if j==0
         sgtitle('Directional speed (stationary frame of ref)');
         saveas(gcf,fullfile(exp_directory, 'Analysis','Directional_speed_stationary.png'))
@@ -284,44 +313,95 @@ for j=0:1
 end
 %% Rate map binning
 hist.bin_size = 3; % cm
-hist.edges = 0:hist.bin_size:xmax; % size of image to cm
-hist.posi = histcounts(posi.x,hist.edges) * posi.dt; % seconds in each bin
+hist.edges = 0 : hist.bin_size : exp.xmax + max([lap.corr]); % size of image to cm
+hist.centers = movmean(hist.edges, 2, 'Endpoints', 'discard');
+hist.s_thresh = 5;
+% hist.posi = histcounts(posi.x,hist.edges) * posi.dt; % seconds in each bin
 
-%% detect the more exact time of jump
+%% detect the (more) exact time of jump
+figure(7); clf;
 for l =1:length(lap)
-    idx = (posi.t>lap(l).t_jump-0.2) & (posi.t<lap(l).t_jump+0.2) & (abs(posi.filt.vx)>30);
-    idx = find(idx,1);
+    idx = (posi.t>lap(l).t_jump-0.2) & (abs(posi.filt.vx)>=50) & (posi.t<lap(l).t_jump + 0.2);
+    idx = find(idx,1); % finding last zero
     lap(l).t_jump_exact = posi.t(idx);
 end
-
-%% CSC
-% theta phase
-start2 = tic;
-for c=1:length(cluster)
-    cluster(c).phase = nan*cluster(c).t;
-end
-
-for sh=1:4
-    csc_filename=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP32.ncs'); % use plotcsc to optimize it
-    [time,data] = read_bin_csc(csc_filename);
-    for l=1:length(lap)
-        idx = time >= lap(l).t(1) & time <= lap(l).t(2);
-        timecsc = time(idx);
-        lfp = data(idx);
-        [theta, phase] = filterlfp(timecsc,lfp);
+i = 0;
+for dir = ["left" "right"]
+    i = i + 1;
+    subplot(2,1,i); hold on
+    for l=[lap([lap.dir]==dir).no]
+        idx = posi.lap == l;
+        plot(posi.t(idx)-lap(l).t_jump_exact,abs(posi.filt.vx(idx)),'m');
+        xlim([-2 2])
         
-        % looking at all the clusters in the same shank
-        for c=1:length(cluster)
-            idx = [cluster(c).lap]==l;
-            if nnz(idx) > 0 % if there a firing for cluster c in this lap
-                cluster(c).phase(idx) = interp1(timecsc,phase, cluster(c).t(idx));
-            end
-        end
+        idx = pos.lap == l;
+        plot(pos.t(idx)-lap(l).t_jump_exact,50*ones(size(pos.t(idx))),'k');
+        title([convertStringsToChars(dir) 'ward laps aligned']);
+        ylabel('Horizontal Speed (cm/s)')
+        xlim([-2 2])
+%         box on
     end
 end
+    
+%% CSC
+% theta phase
+disp('Theta analysis ...')
+start2 = tic;
+
+[csc.t, csc.lfp] = read_bin_csc(csc_filename);
+[csc.theta, csc.phase] = filterlfp(csc.t, csc.lfp, 'theta');
+
+for c=1:length(cluster)
+    cluster(c).phase = nan*cluster(c).t;
+    % x correction for moving frame of referene 
+    cluster(c).dx = interp1(posi.t, posi.dx, cluster(c).t);
+end
+posi.phase = nan * posi.t;
+
+for l=1:length(lap)
+    idx1 = csc.t >= lap(l).t(1) & csc.t <= lap(l).t(2);
+    for c=1:length(cluster)
+        idx2 = [cluster(c).lap]==l;
+        if nnz(idx2) > 0 % if there a firing for cluster c in this lap
+            cluster(c).phase(idx2) = interp1(csc.t(idx1), csc.phase(idx1), cluster(c).t(idx2));
+        end
+    end
+    idx3 = [posi.lap] == l;
+    posi.phase(idx3) = interp1(csc.t(idx1), csc.phase(idx1), posi.t(idx3));
+    if mod(l,20)==0
+        disp(['lap ' num2str(l) ' from ' num2str(numel(lap)) ' laps.'])
+    end
+end
+
+% exclude cluster firings outside laps
+for c=1:length(cluster)
+    idx = isnan(cluster(c).phase); % only ones outside laps are nan
+    cluster(c).t(idx) = [];
+    cluster(c).x(idx) = [];
+    cluster(c).y(idx) = [];
+    cluster(c).p(idx,:) = [];
+    cluster(c).vx(idx) = [];
+    cluster(c).vy(idx) = [];
+    cluster(c).s(idx) = [];
+    cluster(c).lap(idx) = [];
+    cluster(c).dir(idx) = [];
+    cluster(c).status(idx) = [];
+    cluster(c).phase(idx) = [];
+    cluster(c).dx(idx) = [];
+end
+
 toc(start2)
+%% plot rate map
+cluster = plotratemap(exp_directory, posi, lap, cluster, colors, hist, exp);
 %% Saving data
-mat_filename = fullfile(exp_directory,'analyzed_data.mat');
-save(mat_filename,'pos','posi', 'lap', 'cluster','ppcm', 'colors','xmax','daq','hist');
+mat_filename = fullfile(exp_directory,'processed_data.mat');
+if exist(mat_filename, 'file') == 2
+    delete(mat_filename);
+    warning([mat_filename ' removed']);
+end
+save(mat_filename,'pos','posi', 'lap', 'cluster','exp','colors','daq','hist','csc', '-v7.3');
 fprintf(['It totally took ' datestr(seconds(toc(start)),'HH:MM:SS') ,'.\n']);
 disp(['File ' mat_filename ' has been created!'])
+%% Extracting fields
+extractfields(exp_directory);
+plot_fields(exp_directory);

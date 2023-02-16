@@ -1,86 +1,73 @@
 %%PLOTCSC plots all CSC channels for comparison
 %
-%   See also ANALYZEDATA.
+%   See also ANALYZEDATA, APBIN2LFP.
 %
-%   SGL 2022-01-25 (originally 2021-01-31)
+%   Date 2023-01-01 (originally 2021-01-31, 2022-01-25)
+%   
+%   Author Shahin G Lashkari
 %
-clc; clear; close all
-
-% [csc_filename,csc_directory] = uigetfile('D:\Analysis\*.ncs','Select One or More CSC Files','MultiSelect','on');
-% if isa(csc_filename,'double')
-%     return;
-% elseif isa(csc_filename,'char')
-%     csc_filename = {csc_filename};
-% end
-exp_directory = 'D:\Analysis\2021-12-10';
-csc_filename = cell(4,1);
-for sh=1:4
-    csc_filename{sh}=fullfile(exp_directory, ['CA1-Shank' num2str(sh)],'B','LFP32.ncs'); % use plotcsc to optimize it
+clc; clear; close all;
+answer = inputdlg({'Rat', 'Date'},'Enter the rat number and the date',[1 30],{'1068', '2022-12-13'});
+rat_no = answer{1};
+date_str = answer{2};
+%% Selecting the appropriate files
+[lfp_filename,lfp_directory] = uigetfile(['E:\Rat' rat_no '\Analysis\' date_str '\LFP\*.ncs'],'Select One or More CSC Files','MultiSelect','on');
+if isa(lfp_filename,'double')
+    return;
 end
 
-for ch=1:length(csc_filename)
-    [timecsc,lfp] = read_bin_csc(csc_filename{ch});
+tic
+m = zeros(size(lfp_filename));
+for ch=1:length(lfp_filename)
+    [timecsc,lfp] = read_bin_csc(fullfile(lfp_directory, lfp_filename{ch}));
     idx = timecsc >= 100 & timecsc < 200;
     timecsc = timecsc(idx);
     lfp = lfp(idx);
     
-    [theta, phase, mag] = filtertheta(timecsc,lfp);
+    [theta, phase, mag] = filterlfp(timecsc, lfp, 'theta');
     
-    ax1 = subplot(3,1,1);
+    fprintf('%.f%% Average magnitude of CSC %d is %.2f\n', 100*ch/length(lfp_filename), ch, mean(mag)*1e6);
+    m(ch) = mean(mag) *1e6;
+end
+[sorted_m, idx] = sort(m, 'descend');
+figure(1); clf
+plot(sorted_m); hold on
+plot(idx-1,'.')
+toc
+disp('Highest amplitude channels are (in order):')
+fprintf('%d\n', idx(1:20)-1)
+disp('')
+plot(100*sorted_m/max(m));
+set(gcf, 'Position', [100 100 1600 1100]);
+saveas(gcf,[exp_directory filesep 'Analysis' filesep 'theta_comparison.fig'])
+% 
+%%
+figure(2); clf
+tic
+cscs = idx(1:50:end);
+for ch=cscs
+    
+    [timecsc,lfp] = read_bin_csc(fullfile(lfp_directory, lfp_filename{ch}));
+    idx = timecsc >= 100 & timecsc < 200;
+    timecsc = timecsc(idx);
+    lfp = lfp(idx);
+    [theta, phase, mag] = filterlfp(timecsc, lfp, 'theta');
+    
+    ax1 = subplot(2,1,1);
     %plot(timecsc,lfp * 1e6,'Color','#D0D0D0')
     hold on;
     plot(timecsc,theta *1e6);%,'r');
-    ylim([-300 300])
+%     ylim([-300 300])
     ylabel('Theta (\muV)')
     %title(['lap ' num2str(l)])
-    
-    ax2 = subplot(3,1,2);
-    hold on
-    plot(timecsc,phase);%,'b');
-    ylim([-200 200])
-    ylabel('Phase (Angle)')
-    
-    ax3 = subplot(3,1,3);
+
+    ax2 = subplot(2,1,2);
     hold on
     plot(timecsc,mag*1e6);%,'b');
     %ylim([-200 200])
     ylabel('Magnitude')
     
-    
-    disp(['Average magnitude of CSC' num2str(ch) ' is ' num2str(mean(mag) *1e6,'%.2f')]);
 end
-legend(num2str(1:length(csc_filename)))
-linkaxes([ax1 ax2 ax3],'x')
-
-%%
-% figure(2)
-% cscs = 11:12;
-% for ch=cscs
-%     
-%     csc_filename= fullfile(exp_directory,'Neuralynx',['CSC' num2str(ch) '.ncs']);
-%     [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
-%     [theta, phase, mag] = filtertheta(timecsc,lfp);
-%     
-%     ax1 = subplot(3,1,1);
-%     %plot(timecsc,lfp * 1e6,'Color','#D0D0D0')
-%     hold on;
-%     plot(timecsc,theta *1e6);%,'r');
-%     ylim([-300 300])
-%     ylabel('Theta (\muV)')
-%     title(['lap ' num2str(l)])
-%     
-%     ax2 = subplot(3,1,2);
-%     hold on
-%     plot(timecsc,phase);%,'b');
-%     ylim([-200 200])
-%     ylabel('Phase (Angle)')
-%     
-%     ax3 = subplot(3,1,3);
-%     hold on
-%     plot(timecsc,mag*1e6);%,'b');
-%     %ylim([-200 200])
-%     ylabel('Magnitude')
-%     
-% end
-% legend(num2str(cscs'))
-% linkaxes([ax1 ax2 ax3],'x')
+legend(num2str(cscs'-1))
+linkaxes([ax1 ax2],'x')
+toc
