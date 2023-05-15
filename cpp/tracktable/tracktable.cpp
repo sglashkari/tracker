@@ -11,7 +11,7 @@
 #include <chrono> // time, chrono
 #include <sstream>  // std::ostringstream
 #include <iomanip> // std::setw
-#include <algorithm>    // std::max
+#include <algorithm>    // std::max, std::sort
 
 using namespace cv;
 using namespace std;
@@ -140,9 +140,8 @@ int main(int argc, char** argv)
     ifstream rawimagefile;
 
     Mat image = Mat(row, col, CV_8U, pixels), image_bin, image_circle, image_cropped;
-    float x = -1, y = -1;
+    float xr = -1, xl = -1, xrc = col;
     int flag = 0, failure = 0;
-    double last_time;
     
     int fps = 30;
     VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row),false); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4') // false for grayscale (isColor)
@@ -210,71 +209,95 @@ int main(int argc, char** argv)
         if (imageCnt == 0){
             vector<int> RoiOffset = readRoiOffset(image);
         }
+
         cout << filename << endl;
         // printing out the values
         printf("time = %3.6f, gpio = ",time);
         for (int j = 0; j < 4; j++) 
           cout << gpio[j];
 
-        cout << endl;
+      cout << endl;
 
         //crop image to the region of interest (ROI): dynamic size
-        image_cropped = image;
+      Rect roi(0, 0, col, 300);
+      image_cropped = image(roi);
 
         // make binary image (see trackled.cpp)
-        int threshold_value = 50;
-        int threshold_type = 0;
-        int const max_binary_value = 255;
+      int threshold_value = 50;
+      int threshold_type = 0;
+      int const max_binary_value = 255;
 
-        threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
+      threshold(image_cropped, image_bin, threshold_value, max_binary_value, threshold_type );
 
 
         // rat detection (see blob.cpp)
         // Setup SimpleBlobDetector parameters.
-        SimpleBlobDetector::Params params;
+      SimpleBlobDetector::Params params;
 
         // Change thresholds
-        params.minThreshold = 30;
-        params.maxThreshold = 100;
+      params.minThreshold = 30;
+      params.maxThreshold = 100;
 
         // Filter by Area.
-        params.filterByArea = true;
-        params.minArea = 30;
-        params.maxArea = 70;
+      params.filterByArea = true;
+      params.minArea = 30;
+      params.maxArea = 70;
 
         // Filter by Circularity
-        params.filterByCircularity = true;
-        params.minCircularity = 0.75;
+      params.filterByCircularity = true;
+      params.minCircularity = 0.75;
 
         // Filter by Convexity
-        params.filterByConvexity = true;
-        params.minConvexity = 0.6;
+      params.filterByConvexity = true;
+      params.minConvexity = 0.6;
 
         // Filter by Inertia
-        params.filterByInertia = true;
-        params.minInertiaRatio = 0.7;
+      params.filterByInertia = true;
+      params.minInertiaRatio = 0.5;
 
 
         // Storage for blobs
-        vector<KeyPoint> keypoints;
+      vector<KeyPoint> keypoints;
 
         // Set up detector with params
-        Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
+      Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);   
 
-        int largest_idx=0;
+      int left_nail_idx=0, right_nail_idx=1; // 1 & 2 for most of the days for 980, 0 & 1 for 1024, 1055
         // Detect blobs
         if (countNonZero(Scalar::all(255) - image_bin) > 0){ // check if there is any blob
             detector->detect( image_bin, keypoints);
+            std::sort(keypoints.begin(),keypoints.end(),    // sorting
+                [](const KeyPoint &first, const KeyPoint &second){
+                    return first.pt.x < second.pt.x;
+                }); 
 
-            for (int i=0;i<keypoints.size();i++){
+
+            for (int i=0;i<keypoints.size();i++)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
-                if (keypoints[largest_idx].pt.x>keypoints[i].pt.x || keypoints[largest_idx].pt.x < 700 ) { // 2021-12-09 detecting the largest marker
-                    largest_idx = i;
-                } 
-
-            }
+            cout << "right_nail_idx: " << right_nail_idx << " left_nail_idx: " << left_nail_idx<< endl;
             
-            flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
+            for (int i=right_nail_idx+1;i<keypoints.size();i++){
+                //if (keypoints[right_nail_idx].pt.y > (keypoints[0].pt.y + 10) || keypoints[right_nail_idx].pt.y < (keypoints[0].pt.y - 30) ) //|| keypoints[right_nail_idx].pt.x < (xr - 50))  // 2021-12-09 detecting the largest marker
+                if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 5) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
+                    right_nail_idx = i;
+            }
+
+            if (keypoints.size()<2)
+                flag = 0;
+            //else if (keypoints[right_nail_idx].pt.x > (xrc + 50))
+            //    flag = 0;
+            else if (keypoints[right_nail_idx].pt.y < (keypoints[left_nail_idx].pt.y - 20) || keypoints[right_nail_idx].pt.y > (keypoints[left_nail_idx].pt.y + 20))
+                flag = 0;
+            else if ((keypoints[right_nail_idx].pt.x > (xr + 75) || keypoints[right_nail_idx].pt.x < (xr - 75)) && (xr > 0))
+                flag = 0;
+            else
+                flag = (int) keypoints.size(); // updated Dec 13, 2021 previously keypoints.size()== 1 successful (1) or not (0,2,3,..)
+
+            if (keypoints.size()>=2 && keypoints[left_nail_idx].pt.x > col/2){
+                flag = 0;
+            }
+
+
         } else {
             flag = 0;
         }
@@ -283,49 +306,55 @@ int main(int argc, char** argv)
 
         // write data to file 
         if (!flag){
-            x = -1;
-            y = -1;
             failure++;
         } else {
             for (int i=0;i<keypoints.size();i++){
-                if (i!=largest_idx){
+                if (i!=right_nail_idx && i!=left_nail_idx){
                     keypoints[i].size = 0;
-                } else {
-                    x = (float) keypoints[largest_idx].pt.x;
-                    y = (float) keypoints[largest_idx].pt.y;
                 }
             }
-            last_time = time;
-        }
+            xr = (float) keypoints[right_nail_idx].pt.x;
+            xl = (float) keypoints[left_nail_idx].pt.x;
 
+            if (xr > col/2) 
+                xrc = xr;
+            else
+                xrc = col;
+            
+
+            // Draw detected blobs as red circles.
+            // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
+            // the size of the circle corresponds to the size of blob
+            drawKeypoints(image_circle, keypoints, image_circle, Scalar(50,205,50), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+            keypoints[left_nail_idx].size = 0;
+            drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        }
+        
+
+        cout << "right = " << xr << ", left = " << xl << endl;
         data_file.write((char*) &imageCnt, sizeof(int));
         data_file.write((char*) &flag, sizeof(int));
         data_file.write((char*) &time, sizeof(double));
         data_file.write((char*) &gpio[0], 4 * sizeof(int));
-        data_file.write((char*) &x, sizeof(float));
-        data_file.write((char*) &y, sizeof(float));
-
-        // Draw detected blobs as red circles.
-        // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
-        // the size of the circle corresponds to the size of blob
-        drawKeypoints(image_circle, keypoints, image_circle, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        data_file.write((char*) &xr, sizeof(float));
+        data_file.write((char*) &xl, sizeof(float));
 
         video1.write(image);
         video2.write(image_circle);
-
         // Show blobs
-        imshow("keypoints", image_circle );
-        /*if (!flag) {
-            imshow("binary image", image_bin);
-            waitKey(1);
+
+        if (imageCnt % 10 == 0){
+            //imshow("binary image", image_bin);
+            //imshow("cropped image", image_cropped);
+            imshow("keypoints", image_circle );
+            int k = waitKey(1);
+            if (k == 27) {
+                cout << "\n User aborted the program!\n" << endl;
+                return 0; // Esc key pressed
+            }
         }
-        */
-        int k = waitKey(1);
-        if (k == 27) {
-            cout << "\n User aborted the program!\n" << endl;
-            return 0; // Esc key pressed
-        }
-        imageCnt += 30; // every 30 frames
+        imageCnt++;
     }
 
     video1.release();
@@ -341,11 +370,11 @@ int main(int argc, char** argv)
     double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
     cout << endl;
     cout << "Time taken by program is : " << fixed  << duration << setprecision(6);
-    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
-    cout << " milliseconds per frame." << endl;
+    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(2) << imageCnt/duration;
+    cout << " fps (frames per second)." << endl;
     cout << "Success rate was " << success << "%" << endl;
     log_file << "Success rate was " << success << "%" << endl;
-    log_file << "Processing speed: " << setprecision(3) << duration/imageCnt*1e3 << " milliseconds per frame." << endl;
+    log_file << "Processing speed: " << setprecision(2) << imageCnt/duration << " fps." << endl;
     log_file.close();
     data_file.close();
     cout << "Tracking data saved in " << data_filename << endl;

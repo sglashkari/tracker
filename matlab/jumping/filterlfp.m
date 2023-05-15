@@ -5,16 +5,19 @@ function [rhythm, phase, mag]= filterlfp(t, lfp, w, wch)
 %
 % Two methods:
 %
-% (1) w = {'delta'; 'theta'; 'beta'; 'gamma'}
+% (1) w = {'lfp'; 'ap'; 'delta'; 'theta'; 'beta'; 'gamma'}
 % (2) w = [wcl wch] e.g [6 9] for theta
 %       wcl : lower cutoff frequency
 %       wch : higher cutoff frequency
 %
 % (II)  filterlfp(time, signal, wcl, wch)
 %
-
+%   Date 2023-01-03
+%
+%   Author Shahin G Lashkari
+%
 if nargin < 2
-    [t, lfp] = readcsc;
+    [t, lfp] = read_bin_csc;
 end
 
 Ts = mean(diff(t));
@@ -28,20 +31,23 @@ end
 
 if isstring(w) || ischar(w)
     switch w
+        case 'lfp'
+            w = [1 400];
+        case 'ap'
+            w = [600 6000];
         case 'delta'
             w = [0.5 3.5];
         case 'theta'
-            w = [6 9];
+            w = [6 12];
         case 'beta'
             w = [10 20];
         case 'gamma'
             w = [30 50];
         otherwise
-            w = [6 9];
-            disp('not recognized, but theta is chosen.')
+            w = [6 12];
+            warning('Type is not recognized, but theta is chosen!')
     end
 end
-
 wn = w/(SamplingFrequency/2);
 order = 2;
 
@@ -54,11 +60,13 @@ if nargout == 0
     hold on
     plot(t, rhythm,'r');
     clear rhythm;
-elseif nargout > 1
+end
+if nargout > 1
     z = hilbert(rhythm);
-    phase = angle(z);
-    phase = rad2deg(phase);
+    phase = rad2deg(angle(z)); 
+end
+if nargout > 2
     mag = abs(z);
-end    
+end
     
 end

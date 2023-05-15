@@ -1,26 +1,32 @@
 #!/bin/bash
-:'
-counter=000
-for f in *.raw; do 
-    mv $f frame-$((counter)).raw && ((counter++))	# mv -- "$f" "${f%.raw}.png"
-done
-'
-:'
-for f in frame-{590154..591351}.raw; do
-	#mv -- "$f" "${f%.raw}.png"
-	ffmpeg -f rawvideo -r 1 -s 1600x580 -pix_fmt gray -i "$f" "${f%.raw}.pgm" # 1536x740, 1600x580 (Day 3), 1440x708, 
-	cp $f frame-$((counter)).raw && ((counter++))	# mv -- "$f" "${f%.raw}.png"
-done
-'
-:'
 
-max_no=$(ls | sed -e '/raw/!d' | wc -l); 
-counter=000
-for f in frame-{0..($max_no-1)}.raw; do
-	echo $f
-done
-'
+#counter=000
+#for f in *.raw; do 
+#    mv $f frame-$((counter)).raw && ((counter++))	# mv -- "$f" "${f%.raw}.png"
+#done
 
+
+#for f in frame-{590154..591351}.raw; do
+#	#mv -- "$f" "${f%.raw}.png"
+#	ffmpeg -f rawvideo -r 1 -s 1600x580 -pix_fmt gray -i "$f" "${f%.raw}.pgm" # 1536x740, 1600x580 (Day 3), 1440x708, 
+#	cp $f frame-$((counter)).raw && ((counter++))	# mv -- "$f" "${f%.raw}.png"
+#done
+
+	#ff=$(printf "frame-%06d.pgm" ${f//[!0-9]/})
+	#echo "${ff}"
+
+max_no=$(ls | sed -e '/pgm/!d' | wc -l);
+N="${max_no//[^[:digit:]]/}"
+echo ${#N}
+
+counter=000
+for f in *.pgm; do
+	ff=$(printf "frame-%0${#N}d.pgm" ${counter})
+	mv $f $ff && ((counter++))
+done
+
+echo "frame-%0"${#N}"d.pgm"
+ffmpeg -framerate 20 -i "frame-%0"${#N}"d.pgm" -crf 0 -pix_fmt gray -preset veryslow -r 20 "lossless-video.mp4"
 
 #counter=000
 #for f in frame-{0..378184}.raw; do
@@ -54,7 +60,7 @@ done
 #									 -c:v libx264 -crf 20 -r 30 compressed.avi
 
 #crf = 0
-ffmpeg -framerate 30 -i frame-%d.pgm -crf 0 -pix_fmt gray -r 30 "video_crf00.mp4"
+#ffmpeg -framerate 30 -i frame-%d.pgm -crf 0 -pix_fmt gray -r 30 "video_crf00.mp4"
 #ffmpeg -i "video_crf00.mp4" -crf 0 -pix_fmt gray -r 30 "video_crf00_2.mp4"
 #ffmpeg -framerate 1 -f rawvideo -s 2048x400 -i frame-%d.raw -vcodec libx264 -crf $crf -pix_fmt gray -r 1 "output_$crf.mp4"
 #ffmpeg -f rawvideo -framerate 30 -i frame-%d.pgm -s 204 -pix_fmt gray -crf 0 -r 30 output.mp4
