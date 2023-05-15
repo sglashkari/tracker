@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/dome3tracking/test/cpp/trackrat/trackrat.cpp
+stdio.h
+-
+opencv2/opencv.hpp
+-
+opencv2/core.hpp
+-
+opencv2/imgcodecs.hpp
+-
+opencv2/highgui.hpp
+-
+vector
+-
+iostream
+-
+fstream
+-
+string
+-
+tuple
+-
+chrono
+-
+sstream
+-
+iomanip
+-
+algorithm
+-
+

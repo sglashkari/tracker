@@ -35,3 +35,6 @@ octave-workspace
 
 # figures
 *.fig
+
+# temporary plot-time 
+*plottime?*.m

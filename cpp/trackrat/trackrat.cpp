@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         cerr << "Usage: " << argv[0] << " " << argv[1] << " [File Type] [Size]\n"
         << "File Type:\n\t-r,--raw RAW File\tSpecify the image file type \n"
         << "\t(Default): pgm file type\n"
-        << "Size:\n\tcolumn x row (e.g. 1200x600)\n"
+        << "Size:\n\tcolumn x row (e.g. 2048x400)\n"
         << endl;
         return 1;
     }
@@ -142,8 +142,8 @@ int main(int argc, char** argv)
     int no_markers = 0, flag, failure = 0, d = 0, d2 = 0;
     double last_time;
     bool certain = false;
-    
-    int fps = 30;
+
+    int fps = 30; 
     VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row),false); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4') // false for grayscale (isColor)
     VideoWriter video2(directory + "tracked-video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row));
 
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
                     return 1;
                 } else {
                     cerr << "Could not read the image: " << filename << endl;
-                    cerr << "\nProgram aborted!\n" << endl;
+                    cout << "Finished!" << endl;
                     break;
                 }
             }
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
                 cout << "x = " << keypoints[i].pt.x << ", y = " << keypoints[i].pt.y << ", r = " << keypoints[i].size << endl;
             }
             //cout << "-1! " << (keypoints[largest_idx].size < 9.5 && keypoints[largest_idx].pt.x >  800 && keypoints[largest_idx].pt.x < 1200 ) << endl;
-            if (keypoints[largest_idx].size < 9 && keypoints[largest_idx].pt.x >  800 && keypoints[largest_idx].pt.x < 1300 ){ // Jan 2, 2022 size (especially in ditch)
+            if (keypoints[largest_idx].size < 9 && keypoints[largest_idx].pt.x >  750 && keypoints[largest_idx].pt.x < 1300 ){ // Jan 2, 2022 size (especially in ditch)
                 if (no_markers == 3){
                     center_x = (keypoints[0].pt.x + keypoints[1].pt.x + keypoints[2].pt.x)/3;
                     center_y = (keypoints[0].pt.y + keypoints[1].pt.y + keypoints[2].pt.y)/3;
@@ -444,11 +444,11 @@ int main(int argc, char** argv)
     auto finish = chrono::high_resolution_clock::now();
     double duration = chrono::duration_cast<chrono::nanoseconds>(finish-start).count()*1e-9;
     cout << "Time taken by program is " << fixed  << duration << setprecision(6);
-    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(3) << duration/imageCnt*1e3;
-    cout << " milliseconds per frame." << endl;
+    cout << " sec for " << imageCnt << " frame(s).\n" << fixed  << setprecision(2) << imageCnt/duration;
+    cout << " fps (frames per second)." << endl;
     cout << "Success rate: " << success << "%" << endl;
     log_file << "Success rate: " << success << "%" << endl;
-    log_file << "Processing speed: " << setprecision(3) << duration/imageCnt*1e3 << " milliseconds per frame." << endl;
+    log_file << "Processing speed: " << setprecision(2) << imageCnt/duration << " fps." << endl;
     log_file.close();
     data_file.close();
     cout << "Tracking data saved in " << data_filename << endl;

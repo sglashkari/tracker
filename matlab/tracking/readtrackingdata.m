@@ -37,6 +37,8 @@ t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
 %
 figure(2)
 plot(t,x,'.')
+hold on
+plot(t(flag==0 & x>-1),x(flag==0 & x>-1),'or');
 figure(3)
 plot(x,y,'.')
 axis equal
@@ -47,7 +49,10 @@ plot(frame_no,x,'.')
 % without pose
 T = table(frame_no,t,flag,x,y);
 fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
-Filename = fullfile(path,'..','full-tracking.csv');
+if max(flag == 1)
+    fprintf('Accuracy of high confidence 2D tracking is %.2f%%\n',100*sum(flag>0)/length(t))
+end
+Filename = fullfile(path,'..','top-tracking.csv');
 writetable(T,Filename,'Delimiter',',')
 
 %% Pose
@@ -73,12 +78,8 @@ if isfile(Filename)
     % with pose
     T = [T table(success, pos, rot)];
     fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
-    Filename = fullfile(path,'..','full-tracking.csv');
-    writetable(T,Filename,'Delimiter',',')
+    Filename = fullfile(path,'..','top-tracking.csv');
+    %writetable(T,Filename,'Delimiter',',')
 else
     disp([Filename ' does not exist!'])
 end
-
-%%
-T = readtable(Filename);
-head(T,10)
