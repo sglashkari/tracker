@@ -1,9 +1,8 @@
-function [Time,Data,Header] = readcsc(Filename, TimeRange)
+function [Time,Data,Header] = readcsc(ncs_filename, TimeRange)
 if nargin == 0
-     exp_directory = 'C:\Users\Shahin\OneDrive - Johns Hopkins University\JHU\883_Jumping_Recording\200329_Rat883-04';
-     exp_directory = '/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
-     exp_directory = '/home/shahin/Desktop/20-12-09';
-     Filename = fullfile(exp_directory, 'Neuralynx', 'CSC4.ncs')
+     exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
+     [datafile,exp_directory] = uigetfile(fullfile(exp_directory,'*.ncs'), 'Select ncs File');
+     ncs_filename = fullfile(exp_directory, datafile);
 end
 FieldSelectionFlags = [1 1 1 1 1]; % Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples, Samples
 HeaderExtractionFlag = 1;
@@ -19,12 +18,12 @@ end
 if ispc
     addpath('../../pkgs/MatlabImportExport_v6.0.0'); % Neuralynx packages for Windows
     [Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples,...
-        Samples, Header] = Nlx2MatCSC(Filename, FieldSelectionFlags,...
+        Samples, Header] = Nlx2MatCSC(ncs_filename, FieldSelectionFlags,...
         HeaderExtractionFlag, ExtractionMode, ExtractionModeVector);
 else
     addpath('../../pkgs/releaseDec2015/binaries'); % Neuralynx packages for Linux/Mac packages
     [Timestamps, ChannelNumbers, SampleFrequencies, NumberOfValidSamples,...
-        Samples, Header] = Nlx2MatCSC_v3(Filename, FieldSelectionFlags,...
+        Samples, Header] = Nlx2MatCSC_v3(ncs_filename, FieldSelectionFlags,...
         HeaderExtractionFlag, ExtractionMode, ExtractionModeVector);
 end
 
@@ -40,10 +39,10 @@ SamplingFrequency = str2double(SamplingFrequencyString);
 ADBitVoltsString = extractAfter(Header{17},'-ADBitVolts ');
 ADBitVolts = str2double(ADBitVoltsString);
 
-Data = Samples(:)*ADBitVolts;
+Data = Samples(:)*ADBitVolts; % volts
 N = size(Samples);
-s = 1:N(1):N(1)*N(2);
-sq = 1:1:N(1)*N(2);
+s = 1:N(1):N(1)*N(2); 
+sq = N(1)+1:1:N(1)*(N(2)+1); % tmp change
 
 Time = interp1(s,Timestamps,sq); % check accuracy of this method
 
@@ -51,10 +50,11 @@ Data(isnan(Time))=[];
 Time(isnan(Time))=[];
 
 Time = Timestamps(1) + (1:length(Data)) * 1e6 / SamplingFrequency; % micrseconds
-Time = (Time * 1e-6)'; %seconds
+Time = (Time * 1e-6)'; % seconds
 
 if nargout == 0
     plot(Time,Data);
+    fprintf('Size of data is %d.\n',length(Data));
     clear Time;
 end
     

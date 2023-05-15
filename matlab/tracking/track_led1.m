@@ -12,7 +12,9 @@ function track_led1(vid_filename)
 %
 clc; close all;
 if nargin==0
-    [file, path] = uigetfile('D:\OneDrive - Johns Hopkins\JHU\913_Jumping_Recording\2020-10-25_Rat913-01\Videos\2020-10-25_15-59-09.mp4');
+    formats = VideoReader.getFileFormats();
+    filterSpec = getFilterSpec(formats);
+    [file, path] = uigetfile(filterSpec);
     vid_filename = fullfile(path,file);
 end
 

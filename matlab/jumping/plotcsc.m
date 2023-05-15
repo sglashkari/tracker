@@ -1,15 +1,23 @@
-%%% Plotting CSCs
+%%PLOTCSC plots all CSC channels for comparison
+%
+%   See also ANALYZEDATA.
+%
+%   SGL 2021-01-31
+%
 clc; close all
-exp_directory = '/home/shahin/Desktop/20-12-09';
-
+exp_directory = '/home/shahin/Desktop/2020-11-22_Rat913-03';
+[datafile,exp_directory] = uigetfile(fullfile(exp_directory,'data.mat'), 'Select Data File');
+if isequal(datafile, 0)
+    error('Data file was not selected!')
+end
 addpath('../jumping');
 mat_filename = fullfile(exp_directory,'analyzed_data.mat');
 load(mat_filename,'lap');
 l = 9;
 cscs = 2:16;
-for c=cscs
+for ch=cscs
     
-    csc_filename= fullfile(exp_directory,'Neuralynx',['CSC' num2str(c) '.ncs']);
+    csc_filename= fullfile(exp_directory,'Neuralynx',['CSC' num2str(ch) '.ncs']);
     [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
     [theta, phase, mag] = filtertheta(timecsc,lfp);
     
@@ -34,7 +42,7 @@ for c=cscs
     ylabel('Magnitude')
     
     
-    disp(['mean mag for ' num2str(c) ' is ' num2str(mean(mag) *1e6,'%.2f')]);
+    disp(['Average magnitude of CSC' num2str(ch) ' is ' num2str(mean(mag) *1e6,'%.2f')]);
 end
 legend(num2str(cscs'))
 linkaxes([ax1 ax2 ax3],'x')
@@ -42,9 +50,9 @@ linkaxes([ax1 ax2 ax3],'x')
 %%
 figure(2)
 cscs = 11:12;
-for c=cscs
+for ch=cscs
     
-    csc_filename= fullfile(exp_directory,'Neuralynx',['CSC' num2str(c) '.ncs']);
+    csc_filename= fullfile(exp_directory,'Neuralynx',['CSC' num2str(ch) '.ncs']);
     [timecsc,lfp] = readcsc(csc_filename, lap(l).t * 1e6); % microseconds
     [theta, phase, mag] = filtertheta(timecsc,lfp);
     

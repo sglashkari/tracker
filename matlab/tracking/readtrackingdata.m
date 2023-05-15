@@ -1,29 +1,24 @@
-function [t, x, y, p, frame, flag] = readtrackingdata(exp_directory)
 %%READTRACKINGDATA reads tracking.dat file which is the output of the
-% trackrat (git) and extracts the data
-%
-% if only 3 outputs are requested (t, x, y) then the result only shows the 
-% correctly tracked data points (flag == 1)
-% otherwise all the extracted data will spit out
-% if no output is requested, then the 
-% SGL 2020-12-01
+%%trackrat softeware and creates a tracking.csv as the output
+% update of the original version to read from any directory
+% SGL 2021-10-22
 
-if nargin == 0
-    exp_directory = '/home/shahin/onedrive/JHU/913_Jumping_Recording/2020-11-11_Rat913-02';
-    exp_directory = uigetdir(exp_directory,'Select Experiment Folder');
-    if exp_directory == 0
-        return;
-    end
+clc; clear; close all
+
+%% Top View
+[trackingFile,path] = uigetfile('tracking.dat','Select a tracking data file');
+Filename = fullfile(path,'..','top','tracking.dat');
+if ~isfile(Filename)
+    fprintf([Filename ' does not exist!\n']);
+    return;
 end
-
-Filename = fullfile(exp_directory,'Videos','tracking.dat');
 FileID = fopen(Filename,'r');
 
 format(:,1) = {'uint32';'uint32';'double'; 'uint32'; 'uint32'; 'uint32'; 'uint32'; 'single'; 'single'};
 format(:,2) = mat2cell(ones(9,2),ones(1,9));
 format(:,3) = split('frame,flag,time,p1,p2,p3,p4,x,y',",");
 
-m = memmapfile(Filename,'Format',format); 
+m = memmapfile(Filename,'Format',format);
 fclose(FileID);
 
 Samples = m.Data;
@@ -35,33 +30,55 @@ p3 = [Samples.p3]';
 p4 = [Samples.p4]';
 p = [p1 p2 p3 p4];
 flag = [Samples.flag]';
-frame = [Samples.frame]';
+frame_no = [Samples.frame]';
 time = [Samples.time]'; % seconds (wrapped)
 t = unwrap((time-64)/64*pi)/pi*64; % range 0 .. 128
 
-% If flag is not requested discard the data that are not been correctly tracked
-if nargout < 6 
-    x = x (flag == 1);
-    y = y (flag == 1);
-    t = t (flag == 1);
-    p = p (flag == 1, :);
-    frame = frame (flag == 1);
-end
+%
+figure(2)
+plot(t,x,'.')
+figure(3)
+plot(x,y,'.')
+axis equal
+axis([0 2048 0 400])
+figure(4)
+plot(frame_no,x,'.')
 
-% If no output only plot the results:
-if nargout == 0 
-    close all
-    figure(1)
-    plot(x,y,'.');
-    axis equal
-    figure(2)
+% without pose
+T = table(frame_no,t,flag,x,y);
+fprintf('Accuracy of 2D tracking is %.2f%%\n',100*sum(x>-1)/length(t))
+Filename = fullfile(path,'..','full-tracking.csv');
+writetable(T,Filename,'Delimiter',',')
+
+%% Pose
+Filename = fullfile(path,'..','pose.csv');
+if isfile(Filename)
+    P = readtable(Filename);
+    if height(P)~=length(t)
+        disp([Filename ' does not have the right number of elements!'])
+        return;
+    end
+    head(P,10)
+    pos = [P.trans_mark_wrt_base_x P.y_2 P.z_2];
+    rot = [P.rot_mark_wrt_base_x P.y_3 P.z_3 P.w_1];
+    success = P.success_code;
+    % figure
+    figure(5)
     ax1 = subplot(2,1,1);
-    plot(t, x,'.');
+    plot(frame_no,x,'.b')
     ax2 = subplot(2,1,2);
-    plot(t, y,'.');
+    plot(frame_no,P.trans_mark_wrt_base_x,'.r')
     linkaxes([ax1 ax2],'x');
-    clear t
+    
+    % with pose
+    T = [T table(success, pos, rot)];
+    fprintf('Accuracy of 3D tracking is %.2f%%\n',100*sum(success>0)/length(t))
+    Filename = fullfile(path,'..','full-tracking.csv');
+    writetable(T,Filename,'Delimiter',',')
 else
-        
-
+    disp([Filename ' does not exist!'])
 end
+
+%%
+T = readtable(Filename);
+head(T,10)
