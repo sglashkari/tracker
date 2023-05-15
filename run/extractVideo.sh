@@ -12,6 +12,12 @@ fi
 echo "size is $size"
 sleep 2
 
+if  [[$# -eq 1]]; then
+	size="2048x400"
+else
+	size=$1
+fi
+
 max_no=$(ls | sed -e '/raw/!d' | wc -l);
 max_no=$((max_no-1))
 counter=000

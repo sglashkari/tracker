@@ -83,8 +83,3 @@ if isfile(Filename)
 else
     disp([Filename ' does not exist!'])
 end
-
-%%
-%Filename = fullfile(path,'..','top-tracking.csv');
-%T = readtable(Filename);
-%head(T,10)

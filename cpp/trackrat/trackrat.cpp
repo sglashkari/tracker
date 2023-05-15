@@ -142,8 +142,8 @@ int main(int argc, char** argv)
     int no_markers = 0, flag, failure = 0, d = 0, d2 = 0;
     double last_time;
     bool certain = false;
-    
-    int fps = 30; //
+
+    int fps = 30; 
     VideoWriter video1(directory + "video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row),false); // 'M','J','P','G' // CV_FOURCC('F','F','V','1') // CV_FOURCC('X','2','6','4') // false for grayscale (isColor)
     VideoWriter video2(directory + "tracked-video.avi", CV_FOURCC('X','2','6','4'),fps, Size(col,row));
 
