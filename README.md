@@ -9,7 +9,7 @@ The Animal Marker Tracker offers the following key features:
 1. **Marker Detection**: The system detects markers placed on animals using computer vision techniques.
 2. **Real-Time Tracking**: The system tracks the markers in real-time, allowing for live monitoring of animal movements.
 3. **Post-Processing**: The software includes post-processing algorithms to refine the tracking results and improve accuracy.
-4. **Multiple Animal Tracking**: The system supports tracking multiple animals simultaneously.
+4. **Object Tracking**: The system supports tracking of other objects such as gap length and depth of the experiment rig.
 5. **Matlab and C++ Implementation**: The Marker Tracker is implemented using both Matlab and C++, providing flexibility and performance.
 
 ## Prerequisites
